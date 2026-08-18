@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="blue">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NEXUS — Your Digital Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- NEXUS AI chat rendering: Markdown parsing, sanitization, and code syntax highlighting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<style>
+/* ============================================================
+   NEXUS — DESIGN TOKENS
+   ============================================================ */
+:root{
+  --bg-0:#04060b;
+  --bg-1:#070b16;
+  --panel:rgba(10,15,30,.65);
+  --panel-solid:#0b1020;
+  --border:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.16);
+  --text-0:#eaeefb;
+  --text-1:#a7b1c9;
+  --text-2:#69738f;
+  --accent:#4f8cff;
+  --accent-2:#8b6bff;
+  --accent-3:#35e8ff;
+  --danger:#ff5c72;
+  --good:#3ddc97;
+  --warn:#ffb84f;
+  --radius-lg:18px;
+  --radius-md:14px;
+  --radius-sm:9px;
+  --font-display:'Sora', sans-serif;
+  --font-body:'Manrope', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+  --ease:cubic-bezier(.16,.84,.44,1);
+  color-scheme: dark;
+}
+html[data-accent="blue"]{ --accent:#4f8cff; --accent-2:#8b6bff; --accent-3:#35e8ff; }
+html[data-accent="cyan"]{ --accent:#22d3ee; --accent-2:#4f8cff; --accent-3:#7ef7d0; }
+html[data-accent="purple"]{ --accent:#a374ff; --accent-2:#ff6fd8; --accent-3:#7c5cff; }
+html[data-accent="green"]{ --accent:#3ddc97; --accent-2:#35e8ff; --accent-3:#8bffb0; }
+
+html[data-theme="light"]{
+  --bg-0:#eef1fa; --bg-1:#e4e9f7; --panel:rgba(255,255,255,.66); --panel-solid:#ffffff;
+  --border:rgba(10,20,50,.09); --border-strong:rgba(10,20,50,.16);
+  --text-0:#0c1220; --text-1:#3b4560; --text-2:#6b7690;
+  color-scheme: light;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:radial-gradient(120% 120% at 15% -10%, #0c1330 0%, var(--bg-0) 45%, var(--bg-0) 100%);
+  color:var(--text-0);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+html[data-theme="light"] body{
+  background:radial-gradient(120% 120% at 15% -10%, #f6f8ff 0%, var(--bg-0) 55%);
+}
+::selection{ background:var(--accent); color:#000; }
+button{ font-family:inherit; }
+.hidden{ display:none !important; }
+a{ color:inherit; }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ============================================================
+   BACKGROUND — LAYERS
+   ============================================================ */
+#bg-canvas{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+.bg-grid{
+  position:fixed; inset:-10%; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(to right, rgba(120,150,255,.10) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,255,.10) 1px, transparent 1px);
+  background-size:46px 46px;
+  transform:perspective(900px) rotateX(52deg) translateZ(0) translate3d(0,0,0);
+  transform-origin:center 30%;
+  mask-image:radial-gradient(60% 55% at 50% 30%, #000 10%, transparent 75%);
+  -webkit-mask-image:radial-gradient(60% 55% at 50% 30%, #000 10%, transparent 75%);
+  opacity:.55;
+  animation:grid-drift 26s linear infinite;
+  will-change:background-position;
+}
+@keyframes grid-drift{
+  from{ background-position:0 0, 0 0; }
+  to{ background-position:460px 460px, 460px 460px; }
+}
+html[data-theme="light"] .bg-grid{ opacity:.28; }
+
+.bg-orbs{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.orb{
+  position:absolute; border-radius:50%; filter:blur(90px);
+  opacity:.35; mix-blend-mode:screen;
+  will-change:transform;
+}
+html[data-theme="light"] .orb{ opacity:.22; mix-blend-mode:multiply; }
+.orb-1{ width:46vw; height:46vw; top:-10%; left:-8%; background:var(--accent); animation:float-a 34s ease-in-out infinite; }
+.orb-2{ width:38vw; height:38vw; top:30%; right:-10%; background:var(--accent-2); animation:float-b 40s ease-in-out infinite; }
+.orb-3{ width:30vw; height:30vw; bottom:-12%; left:20%; background:var(--accent-3); animation:float-c 30s ease-in-out infinite; }
+.orb-4{ width:24vw; height:24vw; bottom:10%; right:15%; background:#2a1f6e; animation:float-a 46s ease-in-out infinite reverse; }
+.orb-5{ width:20vw; height:20vw; top:55%; left:45%; background:#0d2e5c; animation:float-b 38s ease-in-out infinite reverse; }
+@keyframes float-a{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(4%,6%); } }
+@keyframes float-b{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-5%,4%); } }
+@keyframes float-c{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(3%,-5%); } }
+
+.bg-scanline{
+  position:fixed; left:0; right:0; height:140px; z-index:1; pointer-events:none;
+  background:linear-gradient(to bottom, transparent, rgba(140,170,255,.05), transparent);
+  animation:scan-move 9s linear infinite;
+  opacity:.6;
+}
+@keyframes scan-move{ from{ top:-140px; } to{ top:100vh; } }
+
+.cursor-glow{
+  position:fixed; width:420px; height:420px; border-radius:50%; z-index:1; pointer-events:none;
+  background:radial-gradient(circle, rgba(79,140,255,.14), transparent 70%);
+  transform:translate(-50%,-50%);
+  left:50%; top:50%;
+  will-change:transform;
+}
+
+/* ============================================================
+   SHARED UI PRIMITIVES
+   ============================================================ */
+.glass{
+  background:var(--panel);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:0 8px 30px rgba(0,0,0,.25);
+}
+.eyebrow{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--text-2);
+}
+.btn-primary{
+  font-family:var(--font-mono); font-size:13px; letter-spacing:.08em; font-weight:600;
+  color:#04060b; background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:none; padding:14px 30px; border-radius:10px; cursor:pointer;
+  box-shadow:0 0 0 1px rgba(255,255,255,.1) inset, 0 10px 30px -8px var(--accent);
+  transition:transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px rgba(255,255,255,.16) inset, 0 16px 40px -10px var(--accent); }
+.btn-ghost{
+  font-family:var(--font-mono); font-size:13px; letter-spacing:.08em; font-weight:600;
+  color:var(--text-0); background:transparent; border:1px solid var(--border-strong);
+  padding:14px 30px; border-radius:10px; cursor:pointer; transition:all .25s var(--ease);
+}
+.btn-ghost:hover{ border-color:var(--accent); color:var(--accent-3); transform:translateY(-2px); }
+.chip{
+  font-family:var(--font-mono); font-size:11px; padding:5px 10px; border-radius:999px;
+  border:1px solid var(--border-strong); color:var(--text-1); background:rgba(255,255,255,.03);
+  cursor:pointer; transition:all .2s var(--ease); letter-spacing:.03em;
+}
+.chip.active, .chip:hover{ border-color:var(--accent); color:var(--accent-3); background:rgba(79,140,255,.08); }
+.icon-btn{
+  width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
+  background:rgba(255,255,255,.03); color:var(--text-1); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+  transition:all .2s var(--ease);
+}
+.icon-btn:hover{ border-color:var(--accent); color:var(--accent-3); background:rgba(79,140,255,.08); }
+.ic-svg{
+  width:1em; height:1em; display:inline-block; vertical-align:-0.16em;
+  stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;
+  flex-shrink:0;
+}
+.ic-svg.filled{ fill:currentColor; stroke:none; }
+.wmini-icon .ic-svg, .em .ic-svg{ width:1em; height:1em; }
+.skeleton{
+  border-radius:var(--radius-sm); background:linear-gradient(100deg, rgba(255,255,255,.03) 30%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.03) 70%);
+  background-size:200% 100%; animation:sk-shimmer 1.4s ease-in-out infinite;
+  border:1px solid var(--border);
+}
+@keyframes sk-shimmer{ from{ background-position:150% 0; } to{ background-position:-50% 0; } }
+.error-box{
+  display:flex; flex-direction:column; align-items:center; gap:10px; padding:34px 20px; text-align:center; color:var(--text-1);
+}
+.error-box button{ margin-top:4px; }
+
+@media (prefers-reduced-motion: reduce){
+  .bg-grid, .orb, .bg-scanline{ animation:none !important; }
+  *{ transition-duration:.01ms !important; }
+}
+
+/* ============================================================
+   BOOT SEQUENCE
+   ============================================================ */
+.boot{
+  position:fixed; inset:0; z-index:100; background:var(--bg-0);
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  transition:opacity .6s var(--ease);
+}
+.boot-logo{
+  font-family:var(--font-display); font-weight:700; font-size:clamp(34px,7vw,64px);
+  letter-spacing:.5em; padding-left:.5em; color:var(--text-0);
+  text-shadow:0 0 40px rgba(79,140,255,.5);
+  animation:boot-flicker 2.4s var(--ease);
+}
+@keyframes boot-flicker{
+  0%{ opacity:0; letter-spacing:1.2em; } 30%{ opacity:1; } 100%{ opacity:1; letter-spacing:.5em; }
+}
+.boot-status{
+  margin-top:34px; font-family:var(--font-mono); font-size:13px; color:var(--text-2);
+  display:flex; flex-direction:column; gap:7px; min-height:150px; width:280px;
+}
+.boot-line{ display:flex; justify-content:space-between; opacity:0; animation:boot-line-in .4s var(--ease) forwards; }
+.boot-line b{ color:var(--good); font-weight:600; }
+@keyframes boot-line-in{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+.skip-btn{
+  position:absolute; bottom:36px; right:36px; background:transparent; border:1px solid var(--border-strong);
+  color:var(--text-2); font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+  padding:9px 16px; border-radius:8px; cursor:pointer; transition:all .2s;
+}
+.skip-btn:hover{ color:var(--text-0); border-color:var(--accent); }
+
+/* ============================================================
+   LANDING PAGE
+   ============================================================ */
+.landing{
+  position:relative; z-index:2; min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:40px;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+.landing-nav{
+  position:absolute; top:28px; left:36px; font-family:var(--font-mono); letter-spacing:.2em; font-size:13px; color:var(--text-1);
+}
+.landing-settings{ position:absolute; top:22px; right:30px; }
+.hud-wrap{ position:relative; width:min(70vw,420px); height:min(70vw,420px); margin-bottom:-40px; }
+.hud-ring{ position:absolute; inset:0; }
+.hud-ring svg{ width:100%; height:100%; }
+.hud-ring circle{ fill:none; }
+.ring-outer{ stroke:rgba(79,140,255,.28); stroke-width:1; animation:spin 60s linear infinite; }
+.ring-mid{ stroke:rgba(139,107,255,.35); stroke-width:1; stroke-dasharray:4 10; animation:spin 40s linear infinite reverse; }
+.ring-inner{ stroke:rgba(53,232,255,.4); stroke-width:1.4; stroke-dasharray:2 6; animation:spin 26s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.hud-core{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(46px,9vw,88px);
+  letter-spacing:.14em; background:linear-gradient(180deg,var(--text-0),var(--text-1));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 60px rgba(79,140,255,.35);
+}
+.tagline{ font-family:var(--font-display); font-size:clamp(16px,2.4vw,22px); color:var(--accent-3); margin:6px 0 4px; letter-spacing:.02em; }
+.subtitle{ color:var(--text-1); font-size:15px; max-width:440px; margin:0 auto 34px; }
+.landing-actions{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+.app{ position:relative; z-index:2; min-height:100vh; display:flex; }
+.sidebar{
+  width:230px; flex-shrink:0; padding:22px 16px; display:flex; flex-direction:column; gap:4px;
+  border-right:1px solid var(--border);
+}
+.sidebar-logo{
+  font-family:var(--font-display); font-weight:700; letter-spacing:.2em; font-size:16px;
+  padding:8px 12px 22px; color:var(--text-0);
+}
+.sidebar-logo span{ color:var(--accent-3); }
+.nav-item{
+  display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px;
+  color:var(--text-1); font-size:13.5px; font-weight:500; cursor:pointer; border:1px solid transparent;
+  transition:all .18s var(--ease);
+}
+.nav-item .ic{ width:18px; text-align:center; opacity:.9; }
+.nav-item:hover{ background:rgba(255,255,255,.03); color:var(--text-0); }
+.nav-item.active{ background:rgba(79,140,255,.1); border-color:rgba(79,140,255,.28); color:var(--text-0); }
+.nav-item.active .ic{ color:var(--accent-3); }
+.sidebar-foot{ margin-top:auto; padding:12px; }
+.sidebar-foot .kbd{
+  font-family:var(--font-mono); font-size:10.5px; color:var(--text-2); border:1px solid var(--border);
+  border-radius:6px; padding:2px 6px; margin-left:auto;
+}
+.nav-item{ justify-content:space-between; }
+.nav-item .left{ display:flex; align-items:center; gap:12px; }
+
+.app-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.topbar{
+  height:66px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px;
+  border-bottom:1px solid var(--border); position:sticky; top:0; backdrop-filter:blur(14px); z-index:5;
+  background:rgba(6,9,18,.35);
+}
+html[data-theme="light"] .topbar{ background:rgba(255,255,255,.4); }
+.search-bar{
+  flex:1; max-width:440px; display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text-2);
+  font-size:13px; cursor:pointer; transition:all .2s;
+}
+.search-bar:hover{ border-color:var(--border-strong); }
+.search-bar .kbd{ margin-left:auto; font-family:var(--font-mono); font-size:11px; border:1px solid var(--border); border-radius:6px; padding:1px 6px; }
+.topbar-right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+.avatar{
+  width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:14px; color:#04060b; cursor:pointer;
+}
+.notif-dot{ position:absolute; width:7px; height:7px; border-radius:50%; background:var(--danger); top:6px; right:6px; }
+.icon-btn{ position:relative; }
+
+.content{ flex:1; padding:26px 30px 90px; overflow-y:auto; }
+.panel-head{ margin-bottom:22px; }
+.panel-head h1{ font-family:var(--font-display); font-size:26px; margin:0 0 4px; font-weight:600; }
+.panel-head p{ margin:0; color:var(--text-1); font-size:14px; }
+
+.grid-dash{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px; }
+.card{ padding:18px; transition:transform .22s var(--ease), border-color .22s var(--ease), background .22s var(--ease); cursor:pointer; }
+.card:hover{ transform:translateY(-3px); border-color:var(--border-strong); background:rgba(14,20,40,.72); box-shadow:0 14px 34px rgba(0,0,0,.35), 0 0 0 1px rgba(79,140,255,.12); }
+.card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.card-head h3{ margin:0; font-size:14.5px; font-weight:600; display:flex; align-items:center; gap:8px; }
+.card-head .tag{ font-family:var(--font-mono); font-size:10px; color:var(--text-2); }
+.card.wide{ grid-column:span 2; }
+@media (max-width:700px){ .card.wide{ grid-column:span 1; } }
+
+/* dashboard widget contents */
+.weather-mini{ display:flex; align-items:center; justify-content:space-between; }
+.weather-mini .temp{ font-family:var(--font-display); font-size:40px; font-weight:600; }
+.weather-mini .desc{ color:var(--text-1); font-size:13px; }
+.wmini-icon{ font-size:38px; }
+.news-list, .mini-list{ display:flex; flex-direction:column; gap:10px; }
+.news-row{ display:flex; gap:10px; align-items:flex-start; font-size:12.5px; }
+.news-row .dot{ width:6px; height:6px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.news-row .src{ color:var(--text-2); font-family:var(--font-mono); font-size:10.5px; }
+.poster-row{ display:flex; gap:10px; overflow:hidden; }
+.poster{
+  flex-shrink:0; width:70px; height:100px; border-radius:8px; display:flex; align-items:flex-end;
+  padding:6px; font-size:10px; font-weight:600; color:#fff; background-size:cover;
+}
+.game-cover{ flex-shrink:0; width:110px; height:64px; border-radius:8px; display:flex; align-items:flex-end; padding:6px; font-size:10.5px; font-weight:600; color:#fff; }
+.gh-row{ display:flex; align-items:center; gap:12px; }
+.gh-avatar{ width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,var(--accent-2),var(--accent-3)); }
+.contrib-grid{ display:grid; grid-template-columns:repeat(26,1fr); gap:2px; margin-top:10px; }
+.contrib-cell{ width:100%; aspect-ratio:1; border-radius:2px; background:rgba(255,255,255,.05); }
+.task-mini-row{ display:flex; align-items:center; gap:10px; font-size:13px; }
+.task-mini-row input{ accent-color:var(--accent); width:14px; height:14px; }
+.task-mini-row.done span{ text-decoration:line-through; color:var(--text-2); }
+.goal-ring{ display:flex; align-items:center; gap:12px; }
+.ring-svg{ width:52px; height:52px; }
+.qa-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.qa-btn{
+  display:flex; flex-direction:column; gap:6px; align-items:flex-start; padding:12px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,.02); cursor:pointer; transition:all .2s;
+}
+.qa-btn:hover{ border-color:var(--accent); background:rgba(79,140,255,.08); }
+.player-bar{ display:flex; align-items:center; gap:12px; }
+.player-art{ width:46px; height:46px; border-radius:8px; background:linear-gradient(135deg,var(--accent-2),var(--accent)); flex-shrink:0; }
+.eq{ display:flex; gap:2px; align-items:flex-end; height:16px; }
+.eq span{ width:3px; background:var(--accent-3); border-radius:2px; animation:eqbar 1s ease-in-out infinite; }
+.eq span:nth-child(2){ animation-delay:.15s; } .eq span:nth-child(3){ animation-delay:.3s; } .eq span:nth-child(4){ animation-delay:.45s; }
+@keyframes eqbar{ 0%,100%{ height:4px;} 50%{ height:16px;} }
+
+/* tabs */
+.tabs{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+
+/* movies / games grids */
+.media-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:16px; }
+.media-card{ border-radius:var(--radius-md); overflow:hidden; cursor:pointer; transition:transform .2s var(--ease); border:1px solid var(--border); }
+.media-card:hover{ transform:translateY(-4px); border-color:var(--border-strong); }
+.media-poster{ height:210px; display:flex; align-items:flex-end; padding:10px; font-weight:700; color:#fff; font-size:13px; }
+.media-info{ padding:10px 12px; background:var(--panel); }
+.media-info .r{ color:var(--warn); font-size:11.5px; font-family:var(--font-mono); }
+.media-info h4{ margin:2px 0 2px; font-size:13px; }
+.media-info .d{ color:var(--text-2); font-size:11px; }
+.game-grid .media-poster{ height:130px; }
+
+/* news */
+.article-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+.article-card{ padding:0; overflow:hidden; }
+.article-img{ height:120px; display:flex; align-items:flex-start; justify-content:space-between; padding:10px; }
+.article-body{ padding:14px; }
+.article-body h4{ margin:0 0 6px; font-size:14.5px; line-height:1.35; }
+.article-meta{ display:flex; gap:8px; align-items:center; color:var(--text-2); font-size:11px; font-family:var(--font-mono); }
+
+/* github */
+.gh-search{ display:flex; gap:10px; max-width:420px; margin-bottom:22px; }
+.gh-search input{
+  flex:1; padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.03);
+  color:var(--text-0); font-size:13px; outline:none;
+}
+.gh-search input:focus{ border-color:var(--accent); }
+.gh-stats{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:14px; margin:18px 0; }
+.gh-stat{ padding:16px; text-align:center; }
+.gh-stat b{ display:block; font-family:var(--font-display); font-size:22px; }
+.gh-stat span{ font-size:11px; color:var(--text-2); font-family:var(--font-mono); }
+.lang-bar{ display:flex; height:8px; border-radius:4px; overflow:hidden; margin:10px 0; }
+.repo-row{ display:flex; justify-content:space-between; align-items:center; padding:12px 4px; border-bottom:1px solid var(--border); font-size:13px; }
+.repo-row:last-child{ border-bottom:none; }
+
+/* tasks */
+.task-toolbar{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center; }
+.add-task-input{ flex:1; min-width:200px; padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text-0); font-size:13px; outline:none; }
+.add-task-input:focus{ border-color:var(--accent); }
+.kanban{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.kanban-col{ padding:14px; min-height:200px; }
+.kanban-col h4{ margin:0 0 12px; font-size:12.5px; font-family:var(--font-mono); letter-spacing:.06em; color:var(--text-2); }
+.task-card{ padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.02); font-size:13px; cursor:grab; }
+.task-card .meta{ display:flex; gap:6px; margin-top:8px; align-items:center; }
+.priority-dot{ width:7px; height:7px; border-radius:50%; }
+.task-list-view .task-row{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.task-list-view .task-row:last-child{ border-bottom:none; }
+.task-row input[type=checkbox]{ width:16px; height:16px; accent-color:var(--accent); }
+.task-row .title{ flex:1; font-size:13.5px; }
+.task-row.completed .title{ text-decoration:line-through; color:var(--text-2); }
+.task-row .cat{ font-family:var(--font-mono); font-size:10px; color:var(--text-2); border:1px solid var(--border); padding:2px 7px; border-radius:6px; }
+.del-btn{ background:none; border:none; color:var(--text-2); cursor:pointer; font-size:14px; }
+.del-btn:hover{ color:var(--danger); }
+
+/* calendar */
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.cal-dow{ text-align:center; font-family:var(--font-mono); font-size:10.5px; color:var(--text-2); padding-bottom:6px; }
+.cal-day{ aspect-ratio:1; border-radius:8px; border:1px solid var(--border); padding:6px; font-size:12px; color:var(--text-1); position:relative; }
+.cal-day.today{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+.cal-day .evt{ position:absolute; bottom:5px; left:5px; right:5px; height:4px; border-radius:2px; }
+.cal-day.other{ opacity:.3; }
+.cal-legend{ display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; font-size:12px; color:var(--text-1); }
+.cal-legend .sw{ width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:6px; }
+.cal-nav{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.cal-nav h3{ margin:0; font-family:var(--font-display); font-size:16px; min-width:150px; text-align:center; }
+
+/* goals */
+.goal-row{ padding:16px; margin-bottom:12px; }
+.goal-row .top{ display:flex; justify-content:space-between; margin-bottom:10px; font-size:13.5px; }
+.progress-track{ height:8px; border-radius:6px; background:rgba(255,255,255,.06); overflow:hidden; }
+.progress-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--accent),var(--accent-3)); transition:width 1s var(--ease); }
+.ach-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:18px; }
+.ach-card{ padding:16px; text-align:center; }
+.ach-card .em{ font-size:26px; }
+.ach-card.locked{ opacity:.35; filter:grayscale(1); }
+
+/* analytics */
+.chart-box{ padding:20px; }
+.bar-chart{ display:flex; align-items:flex-end; gap:10px; height:180px; margin-top:10px; }
+.bar-chart .bar-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+.bar-chart .bar{ width:100%; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--accent-3),var(--accent)); transition:height 1s var(--ease); }
+.bar-chart .lbl{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-2); }
+
+/* AI Assistant */
+.ai-shell{ display:grid; grid-template-columns:1fr 320px; gap:18px; height:calc(100vh - 190px); min-height:460px; }
+@media (max-width:900px){ .ai-shell{ grid-template-columns:1fr; height:auto; } }
+.ai-chat{ display:flex; flex-direction:column; padding:0; overflow:hidden; }
+.ai-messages{ flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+.msg{ max-width:75%; padding:11px 14px; border-radius:14px; font-size:13.5px; line-height:1.5; }
+.msg.user{ align-self:flex-end; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#04060b; border-bottom-right-radius:4px; }
+.msg.ai{ align-self:flex-start; background:rgba(255,255,255,.04); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.msg .ts{ display:block; margin-top:5px; font-size:9.5px; opacity:.6; font-family:var(--font-mono); }
+.typing{ display:flex; gap:4px; padding:12px 14px; align-self:flex-start; }
+.typing span{ width:6px; height:6px; border-radius:50%; background:var(--text-1); animation:typing-b 1.2s infinite; }
+.typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+@keyframes typing-b{ 0%,60%,100%{ opacity:.3; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-3px);} }
+.ai-input-row{ display:flex; gap:8px; padding:14px; border-top:1px solid var(--border); align-items:flex-end; }
+.ai-input-row textarea{ flex:1; resize:none; max-height:120px; font-family:inherit; line-height:1.4; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:var(--text-0); outline:none; font-size:13.5px; }
+.ai-input-row textarea:focus{ border-color:var(--accent); }
+.ai-input-row .icon-btn:disabled{ opacity:.5; cursor:not-allowed; }
+.ai-suggest{ display:flex; gap:8px; flex-wrap:wrap; padding:0 14px 12px; }
+.ai-core-panel{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; gap:16px; }
+.ai-core-svg{ width:210px; height:210px; }
+.ai-status-row{ display:flex; align-items:center; justify-content:center; gap:7px; }
+.status-dot{ width:8px; height:8px; border-radius:50%; background:var(--warn); flex-shrink:0; transition:background .3s, box-shadow .3s; }
+.msg .msg-body > *:first-child{ margin-top:0; }
+.msg .msg-body > *:last-child{ margin-bottom:0; }
+.msg .msg-body p{ margin:0 0 8px; }
+.msg .msg-body ul, .msg .msg-body ol{ margin:0 0 8px; padding-left:20px; }
+.msg .msg-body h1, .msg .msg-body h2, .msg .msg-body h3{ font-size:1.05em; margin:10px 0 6px; }
+.msg .msg-body table{ border-collapse:collapse; width:100%; margin:8px 0; font-size:12.5px; }
+.msg .msg-body th, .msg .msg-body td{ border:1px solid var(--border); padding:5px 8px; text-align:left; }
+.msg .msg-body code{ font-family:var(--font-mono); background:rgba(255,255,255,.08); padding:1px 5px; border-radius:4px; font-size:.92em; }
+.msg .msg-body pre{ position:relative; background:rgba(0,0,0,.35); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:8px 0; overflow-x:auto; }
+.msg .msg-body pre code{ background:none; padding:0; font-size:12.5px; white-space:pre; }
+.code-copy-btn{ position:absolute; top:8px; right:8px; background:rgba(255,255,255,.08); border:1px solid var(--border); color:var(--text-1); border-radius:6px; padding:3px 9px; font-size:10.5px; cursor:pointer; font-family:var(--font-mono); }
+.code-copy-btn:hover{ background:rgba(255,255,255,.16); color:var(--text-0); }
+.msg.error-msg{ border:1px solid rgba(255,92,114,.4); background:rgba(255,92,114,.06); align-self:flex-start; max-width:85%; }
+.demo-badge{ display:inline-block; margin-left:6px; font-size:9.5px; font-family:var(--font-mono); color:var(--warn); border:1px solid rgba(255,184,79,.4); border-radius:4px; padding:1px 6px; vertical-align:middle; }
+
+/* focus mode */
+.focus-overlay{
+  position:fixed; inset:0; z-index:60; background:rgba(2,4,10,.86); backdrop-filter:blur(6px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
+}
+.focus-timer-svg{ width:min(60vw,320px); height:min(60vw,320px); }
+.focus-time{ font-family:var(--font-display); font-size:54px; font-weight:700; }
+.focus-task{ color:var(--text-1); font-size:14px; }
+.focus-controls{ display:flex; gap:12px; }
+.focus-presets{ display:flex; gap:8px; }
+
+/* command palette */
+.palette-overlay{ position:fixed; inset:0; z-index:70; background:rgba(2,4,10,.6); backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; padding-top:12vh; }
+.palette-box{ width:min(560px,92vw); overflow:hidden; }
+.palette-input{ width:100%; padding:18px 20px; background:transparent; border:none; border-bottom:1px solid var(--border); color:var(--text-0); font-size:16px; outline:none; }
+.palette-results{ max-height:360px; overflow-y:auto; padding:8px; }
+.palette-item{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:8px; cursor:pointer; font-size:13.5px; }
+.palette-item:hover, .palette-item.sel{ background:rgba(79,140,255,.1); }
+.palette-item .cat{ margin-left:auto; font-family:var(--font-mono); font-size:10px; color:var(--text-2); }
+
+/* settings */
+.settings-grid{ display:grid; grid-template-columns:220px 1fr; gap:24px; }
+@media (max-width:800px){ .settings-grid{ grid-template-columns:1fr; } }
+.settings-nav{ display:flex; flex-direction:column; gap:2px; }
+.settings-nav div{ padding:10px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-1); }
+.settings-nav div.active{ background:rgba(79,140,255,.1); color:var(--text-0); }
+.settings-section{ padding:22px; margin-bottom:16px; }
+.settings-section h3{ margin:0 0 16px; font-size:15px; }
+.setting-row{ display:flex; align-items:center; justify-content:between; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
+.setting-row:last-child{ border-bottom:none; }
+.setting-row .lbl{ font-size:13.5px; }
+.setting-row .desc{ font-size:11.5px; color:var(--text-2); margin-top:2px; }
+.switch{ width:42px; height:24px; border-radius:20px; background:rgba(255,255,255,.1); position:relative; cursor:pointer; flex-shrink:0; border:1px solid var(--border); transition:background .2s; }
+.switch.on{ background:var(--accent); }
+.switch::after{ content:''; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff; top:2px; left:2px; transition:transform .2s; }
+.switch.on::after{ transform:translateX(18px); }
+.accent-swatches{ display:flex; gap:10px; }
+.swatch{ width:32px; height:32px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+.swatch.sel{ border-color:#fff; }
+.theme-opts, .intensity-opts{ display:flex; gap:8px; }
+
+/* toasts */
+.toasts{ position:fixed; bottom:24px; right:24px; z-index:200; display:flex; flex-direction:column; gap:10px; }
+.toast{ padding:13px 18px; border-radius:10px; font-size:13px; min-width:220px; animation:toast-in .3s var(--ease); display:flex; gap:10px; align-items:center; }
+@keyframes toast-in{ from{ opacity:0; transform:translateX(20px);} to{ opacity:1; transform:translateX(0);} }
+
+/* modal */
+.modal-overlay{ position:fixed; inset:0; z-index:80; background:rgba(2,4,10,.7); backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-box{ width:min(700px,94vw); max-height:86vh; overflow-y:auto; padding:0; }
+.modal-hero{ height:180px; display:flex; align-items:flex-end; padding:20px; }
+.modal-body{ padding:22px; }
+.modal-close{ position:absolute; top:14px; right:14px; }
+
+/* bottom nav (mobile) */
+.bottom-nav{ display:none; }
+@media (max-width:860px){
+  .sidebar{ display:none; }
+  .bottom-nav{
+    display:flex; position:fixed; bottom:0; left:0; right:0; z-index:20; justify-content:space-around;
+    padding:10px 6px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);
+    background:rgba(6,9,18,.75); backdrop-filter:blur(14px);
+  }
+  .bottom-nav .bn-item{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9.5px; color:var(--text-2); cursor:pointer; }
+  .bottom-nav .bn-item.active{ color:var(--accent-3); }
+  .content{ padding:18px 16px 90px; }
+  .kanban{ grid-template-columns:1fr; }
+  .ai-shell{ height:auto; }
+}
+@media (min-width:861px) and (max-width:1100px){
+  .sidebar{ width:74px; }
+  .sidebar .lbl-text{ display:none; }
+  .sidebar-logo{ text-align:center; padding:8px 0 22px; }
+  .nav-item{ justify-content:center; }
+  .nav-item .kbd{ display:none; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="bg-grid" id="bgGrid"></div>
+<div class="bg-orbs" id="bgOrbs">
+  <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+  <div class="orb orb-4"></div><div class="orb orb-5"></div>
+</div>
+<div class="bg-scanline" id="bgScanline"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- ================= BOOT ================= -->
+<div class="boot" id="boot">
+  <div class="boot-logo">NEXUS</div>
+  <div class="boot-status" id="bootStatus"></div>
+  <button class="skip-btn" id="skipIntro">Skip Intro →</button>
+</div>
+
+<!-- ================= LANDING ================= -->
+<div class="landing hidden" id="landing">
+  <div class="landing-nav">NEXUS//</div>
+  <div class="hud-wrap">
+    <div class="hud-ring">
+      <svg viewBox="0 0 400 400">
+        <circle class="ring-outer" cx="200" cy="200" r="185"/>
+        <circle class="ring-mid" cx="200" cy="200" r="155"/>
+        <circle class="ring-inner" cx="200" cy="200" r="125"/>
+      </svg>
+    </div>
+    <div class="hud-core">NEXUS</div>
+  </div>
+  <p class="tagline">Your Digital Command Center.</p>
+  <p class="subtitle">One intelligent interface for your digital world — AI, productivity, live information, and entertainment, unified.</p>
+  <div class="landing-actions">
+    <button class="btn-primary" id="launchBtn">LAUNCH NEXUS</button>
+    <button class="btn-ghost" id="exploreBtn">EXPLORE</button>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app hidden" id="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">NEX<span>US</span></div>
+    <div id="navList"></div>
+    <div class="sidebar-foot">
+      <div class="nav-item" id="navSettingsBtn"><span class="left"><span class="ic"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><span class="lbl-text">Settings</span></span></div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="search-bar" id="openPaletteBtn">
+        <span><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/></svg></span><span>Search NEXUS…</span><span class="kbd">Ctrl K</span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="aiTopBtn" title="NEXUS AI"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor" stroke="none"/></svg></button>
+        <button class="icon-btn" id="notifBtn" title="Notifications"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg><span class="notif-dot"></span></button>
+        <div class="avatar" id="avatarBtn">NX</div>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+
+      <!-- DASHBOARD -->
+      <section data-panel="dashboard">
+        <div class="panel-head">
+          <h1 id="greeting">Good evening</h1>
+          <p>Here's what's happening around you.</p>
+        </div>
+        <div class="grid-dash" id="dashGrid"></div>
+      </section>
+
+      <!-- AI -->
+      <section data-panel="ai" hidden>
+        <div class="panel-head"><h1>NEXUS AI</h1><p>Your intelligent digital assistant.</p></div>
+        <div class="ai-shell">
+          <div class="glass ai-chat">
+            <div class="ai-messages" id="aiMessages"></div>
+            <div class="ai-suggest" id="aiSuggest"></div>
+            <div class="ai-input-row">
+              <button class="icon-btn" id="aiVoiceBtn" title="Voice"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 19v3"/></svg></button>
+              <button class="icon-btn" id="aiAttachBtn" title="Attach"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7.5 8.5 16a3 3 0 0 1-4.2-4.2L13 3a2 2 0 0 1 2.8 2.8L7.5 14a1 1 0 0 1-1.4-1.4L13 5.5"/></svg></button>
+              <textarea id="aiInput" rows="1" placeholder="Ask NEXUS anything… (Shift+Enter for a new line)"></textarea>
+              <button class="icon-btn" id="aiSendBtn" title="Send"><svg class="ic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 11l18-8-8 18-2-8-8-2z" fill="currentColor" stroke="none"/></svg></button>
+            </div>
+          </div>
+          <div class="glass ai-core-panel">
+            <svg class="ai-core-svg" viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(79,140,255,.18)" stroke-width="1"/>
+              <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(139,107,255,.28)" stroke-width="1" stroke-dasharray="3 8">
+                <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="18s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(53,232,255,.4)" stroke-width="1.4" stroke-dasharray="2 6">
+                <animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="12s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="100" cy="100" r="26" fill="url(#coreGrad)">
+                <animate attributeName="r" values="24;29;24" dur="2.6s" repeatCount="indefinite"/>
+              </circle>
+              <defs>
+                <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="var(--accent-3)"/>
+                  <stop offset="100%" stop-color="var(--accent)"/>
+                </radialGradient>
+              </defs>
+            </svg>
+            <div class="ai-status-row"><span class="status-dot" id="aiStatusDot"></span><span class="eyebrow" id="aiStatusText">AI CORE • CONNECTING</span></div>
+            <p style="color:var(--text-1); font-size:12.5px; text-align:center;">Powered by Gemini via the NEXUS backend. Demo Mode is available in Settings as an explicit fallback.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- WEATHER -->
+      <section data-panel="weather" hidden>
+        <div class="panel-head"><h1>Weather</h1><p>Live conditions via Open‑Meteo.</p></div>
+        <div id="weatherPanelBody"></div>
+      </section>
+
+      <!-- MOVIES -->
+      <section data-panel="movies" hidden>
+        <div class="panel-head"><h1>Movies</h1><p>Curated with TMDB‑style data.</p></div>
+        <div class="tabs" id="movieTabs"></div>
+        <div class="media-grid" id="movieGrid"></div>
+      </section>
+
+      <!-- MUSIC -->
+      <section data-panel="music" hidden>
+        <div class="panel-head"><h1>Music</h1><p>Search Spotify and play right here, embedded.</p></div>
+        <div class="gh-search">
+          <input id="musicSearchInput" type="text" placeholder="Search a song, artist, or album…" autocomplete="off">
+          <button class="btn-primary" id="musicSearchBtn" style="padding:11px 20px;">SEARCH</button>
+        </div>
+        <div id="musicPanelBody"></div>
+      </section>
+
+      <!-- NEWS -->
+      <section data-panel="news" hidden>
+        <div class="panel-head"><h1>News</h1><p>Signals from across your interests.</p></div>
+        <div class="tabs" id="newsTabs"></div>
+        <div class="article-grid" id="newsGrid"></div>
+      </section>
+
+      <!-- GAMES -->
+      <section data-panel="games" hidden>
+        <div class="panel-head"><h1>Games</h1><p>Trending &amp; upcoming, via RAWG‑style data.</p></div>
+        <div class="tabs" id="gameTabs"></div>
+        <div class="media-grid game-grid" id="gameGrid"></div>
+      </section>
+
+      <!-- GITHUB -->
+      <section data-panel="github" hidden>
+        <div class="panel-head"><h1>GitHub</h1><p>Track any developer profile.</p></div>
+        <div class="gh-search">
+          <input id="ghUserInput" type="text" placeholder="Enter GitHub username…" value="octocat">
+          <button class="btn-primary" id="ghLoadBtn" style="padding:11px 20px;">LOAD</button>
+        </div>
+        <div id="ghPanelBody"></div>
+      </section>
+
+      <!-- TASKS -->
+      <section data-panel="tasks" hidden>
+        <div class="panel-head"><h1>Tasks</h1><p>Plan today, track progress.</p></div>
+        <div class="task-toolbar">
+          <input class="add-task-input" id="newTaskInput" type="text" placeholder="Add a task and press Enter…">
+          <div class="chip active" data-view="list">List</div>
+          <div class="chip" data-view="kanban">Kanban</div>
+        </div>
+        <div class="tabs" id="taskTabs">
+          <div class="chip active" data-filter="today">Today</div>
+          <div class="chip" data-filter="upcoming">Upcoming</div>
+          <div class="chip" data-filter="completed">Completed</div>
+        </div>
+        <div id="taskListWrap" class="glass task-list-view"></div>
+        <div id="taskKanbanWrap" class="kanban hidden"></div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section data-panel="calendar" hidden>
+        <div class="panel-head"><h1>Calendar</h1><p>Classes, exams, meetings, and personal events.</p></div>
+        <div class="cal-nav">
+          <button class="icon-btn" id="calPrev">‹</button>
+          <h3 id="calMonthLabel"></h3>
+          <button class="icon-btn" id="calNext">›</button>
+        </div>
+        <div class="glass" style="padding:18px;">
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend">
+            <span><span class="sw" style="background:var(--accent)"></span>Classes</span>
+            <span><span class="sw" style="background:var(--accent-2)"></span>Exams</span>
+            <span><span class="sw" style="background:var(--accent-3)"></span>Meetings</span>
+            <span><span class="sw" style="background:var(--good)"></span>Personal</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- GOALS -->
+      <section data-panel="goals" hidden>
+        <div class="panel-head"><h1>Goals</h1><p>Track long-term progress and streaks.</p></div>
+        <div id="goalsList"></div>
+        <div class="eyebrow" style="margin:22px 0 6px;">ACHIEVEMENTS</div>
+        <div class="ach-grid" id="achGrid"></div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section data-panel="analytics" hidden>
+        <div class="panel-head"><h1>Analytics</h1><p>Your week at a glance.</p></div>
+        <div class="grid-dash">
+          <div class="glass chart-box wide">
+            <div class="eyebrow">WEEKLY ACTIVITY (HRS)</div>
+            <div class="bar-chart" id="chartActivity"></div>
+          </div>
+          <div class="glass chart-box">
+            <div class="eyebrow">TASKS COMPLETED</div>
+            <div class="bar-chart" id="chartTasks"></div>
+          </div>
+          <div class="glass chart-box">
+            <div class="eyebrow">GITHUB ACTIVITY</div>
+            <div class="bar-chart" id="chartGh"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section data-panel="settings" hidden>
+        <div class="panel-head"><h1>Settings</h1><p>Tune NEXUS to your preference.</p></div>
+        <div class="settings-grid">
+          <div class="settings-nav" id="settingsNav"></div>
+          <div id="settingsBody"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <nav class="bottom-nav" id="bottomNav"></nav>
+</div>
+
+<!-- COMMAND PALETTE -->
+<div class="palette-overlay hidden" id="paletteOverlay">
+  <div class="glass palette-box">
+    <input class="palette-input" id="paletteInput" placeholder="Search movies, news, games, GitHub, tasks, AI…" autocomplete="off">
+    <div class="palette-results" id="paletteResults"></div>
+  </div>
+</div>
+
+<!-- FOCUS OVERLAY -->
+<div class="focus-overlay hidden" id="focusOverlay">
+  <div class="eyebrow" id="focusModeLabel">FOCUS SESSION • 25/5</div>
+  <svg class="focus-timer-svg" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8"/>
+    <circle id="focusRing" cx="100" cy="100" r="88" fill="none" stroke="url(#focusGrad)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+    <defs><linearGradient id="focusGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--accent-3)"/><stop offset="100%" stop-color="var(--accent)"/>
+    </linearGradient></defs>
+  </svg>
+  <div class="focus-time" id="focusTime">25:00</div>
+  <div class="focus-task" id="focusTaskLabel">No task selected</div>
+  <div class="focus-presets" id="focusPresets"></div>
+  <div class="focus-controls">
+    <button class="btn-ghost" id="focusPauseBtn">PAUSE</button>
+    <button class="btn-ghost" id="focusExitBtn">EXIT</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ============================================================
+   NEXUS — APP SCRIPT
+   ============================================================ */
+(function(){
+"use strict";
+
+const $ = (s,ctx)=> (ctx||document).querySelector(s);
+const $$ = (s,ctx)=> Array.from((ctx||document).querySelectorAll(s));
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------
+   ICON SYSTEM — minimalist inline SVG (replaces emoji glyphs)
+------------------------------------------------------------ */
+const ICONS = {
+  home:        '<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
+  sparkle:     '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor" stroke="none"/>',
+  cloud:       '<path d="M7 18a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 9.5 4 4 0 0 1 17 18H7z"/>',
+  play:        '<polygon points="6,4 20,12 6,20" fill="currentColor" stroke="none"/>',
+  music:       '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  newspaper:   '<rect x="3" y="5" width="14" height="15" rx="1"/><path d="M17 8h3a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H6"/><path d="M7 9h6M7 12h6M7 15h4"/>',
+  gamepad:     '<rect x="2" y="7" width="20" height="10" rx="4"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="10.5" r="1"/><circle cx="18.5" cy="13" r="1"/>',
+  code:        '<path d="M8 6 3 12l5 6M16 6l5 6-5 6M13 4l-2 16"/>',
+  check:       '<path d="M5 13l4 4L19 7"/>',
+  calendar:    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+  target:      '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  barchart:    '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+  settings:    '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  search:      '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.6-4.6"/>',
+  bell:        '<path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+  mic:         '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 19v3"/>',
+  paperclip:   '<path d="M17 7.5 8.5 16a3 3 0 0 1-4.2-4.2L13 3a2 2 0 0 1 2.8 2.8L7.5 14a1 1 0 0 1-1.4-1.4L13 5.5"/>',
+  send:        '<path d="M3 11l18-8-8 18-2-8-8-2z" fill="currentColor" stroke="none"/>',
+  star:        '<polygon points="12,3 14.7,9.3 21.5,9.9 16.3,14.3 17.9,21 12,17.3 6.1,21 7.7,14.3 2.5,9.9 9.3,9.3" fill="currentColor" stroke="none"/>',
+  x:           '<path d="M6 6l12 12M18 6L6 18"/>',
+  checkcircle: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/>',
+  flame:       '<path d="M12 2c2 3-3 5-1 9 1-2 3-2 3-4 2 2 3 4 3 6a6 6 0 0 1-12 0c0-4 3-6 5-11z"/>',
+  trophy:      '<path d="M8 4h8v4a4 4 0 0 1-8 0V4z"/><path d="M8 5H5a3 3 0 0 0 3 5M16 5h3a3 3 0 0 1-3 5"/><path d="M12 13v3M9 20h6M10 16.5h4v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z"/>',
+  laptop:      '<rect x="4" y="5" width="16" height="10" rx="1"/><path d="M2 19h20"/>',
+  book:        '<path d="M4 5a2 2 0 0 1 2-2h6v18H6a2 2 0 0 1-2-2V5z"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>',
+  clock:       '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  plus:        '<path d="M12 5v14M5 12h14"/>',
+  command:     '<path d="M9 4A2.5 2.5 0 0 0 6.5 6.5 2.5 2.5 0 0 0 9 9h6a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 15 4a2.5 2.5 0 0 0-2.5 2.5v9A2.5 2.5 0 0 0 15 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 15 13H9a2.5 2.5 0 0 0-2.5 2.5A2.5 2.5 0 0 0 9 18a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 9 4z"/>',
+  sun:         '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
+  'cloud-sun': '<circle cx="7" cy="7" r="3"/><path d="M7 2v1.5M2 7h1.5M3.4 3.4l1 1"/><path d="M9 19a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 19 10.5 4 4 0 0 1 19 19H9z"/>',
+  fog:         '<path d="M4 8h16M2 12h20M6 16h12M4 20h16"/>',
+  'cloud-drizzle': '<path d="M7 15a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 6.5 4 4 0 0 1 17 15H7z"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/>',
+  'cloud-rain':'<path d="M7 15a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 6.5 4 4 0 0 1 17 15H7z"/><path d="M9 19v2M13 19v2M17 19v2"/>',
+  'cloud-snow':'<path d="M7 15a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 6.5 4 4 0 0 1 17 15H7z"/><circle cx="9" cy="20" r="0.8" fill="currentColor" stroke="none"/><circle cx="13" cy="20" r="0.8" fill="currentColor" stroke="none"/><circle cx="17" cy="20" r="0.8" fill="currentColor" stroke="none"/>',
+  'cloud-lightning':'<path d="M7 13a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 4.5 4 4 0 0 1 17 13H7z"/><path d="M13 13l-3 5h3l-2 4"/>',
+};
+function icon(name, size){
+  const body = ICONS[name] || '';
+  const sizeAttr = size ? ` style="width:${size}px;height:${size}px;"` : '';
+  return `<svg class="ic-svg"${sizeAttr} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+}
+const store = {
+  get(k,d){ try{ const v = JSON.parse(localStorage.getItem('nexus:'+k)); return v===null||v===undefined ? d : v; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('nexus:'+k, JSON.stringify(v)); }catch(e){} }
+};
+function toast(msg, type){
+  const el = document.createElement('div');
+  el.className = 'toast glass';
+  const colors = {good:'var(--good)', warn:'var(--warn)', bad:'var(--danger)', info:'var(--accent-3)'};
+  el.innerHTML = '<span style="color:'+(colors[type]||colors.info)+'">●</span><span>'+msg+'</span>';
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(20px)'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+
+/* ------------------------------------------------------------
+   BACKGROUND ENGINE — grid parallax, orbs parallax, canvas
+   particles + neural network, cursor glow
+------------------------------------------------------------ */
+const settings = store.get('settings', {
+  theme:'dark', accent:'blue', intensity:'medium',
+  bgGrid:true, bgParticles:true, bgNeural:true, bgScanline:true, bgCursorGlow:true, bgParallax:true,
+  soundFx:true, soundAmbient:false, aiMode:'real'
+});
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', settings.theme==='system'
+    ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light':'dark')
+    : settings.theme);
+  document.documentElement.setAttribute('data-accent', settings.accent);
+}
+applyTheme();
+$('#bgScanline').style.display = settings.bgScanline && !reduceMotion ? '' : 'none';
+$('#cursorGlow').style.display = settings.bgCursorGlow && !reduceMotion ? '' : 'none';
+$('#bgGrid').style.display = settings.bgGrid ? '' : 'none';
+if(reduceMotion){ $('#bgGrid').style.animation='none'; }
+
+let mouseX = innerWidth/2, mouseY = innerHeight/2;
+let glowX = mouseX, glowY = mouseY;
+window.addEventListener('mousemove', (e)=>{
+  mouseX = e.clientX; mouseY = e.clientY;
+  if(settings.bgParallax && !reduceMotion){
+    const nx = (e.clientX/innerWidth - .5), ny = (e.clientY/innerHeight - .5);
+    $('#bgGrid').style.transform = `perspective(900px) rotateX(52deg) translate3d(${nx*18}px, ${ny*10}px, 0)`;
+    $('#bgOrbs').style.transform = `translate3d(${nx*-14}px, ${ny*-10}px, 0)`;
+  }
+});
+
+// Canvas: particles + neural network
+const canvas = $('#bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, DPR;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = canvas.width = innerWidth*DPR; H = canvas.height = innerHeight*DPR;
+  canvas.style.width = innerWidth+'px'; canvas.style.height = innerHeight+'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+const isSmall = ()=> innerWidth < 720;
+function particleCount(){
+  const base = {low:26, medium:52, high:86}[settings.intensity] || 52;
+  return isSmall() ? Math.round(base*.5) : base;
+}
+let particles = [];
+function initParticles(){
+  particles = [];
+  const n = particleCount();
+  for(let i=0;i<n;i++){
+    particles.push({
+      x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+      r: Math.random()*1.8+0.6,
+      vx:(Math.random()-.5)*.15, vy:(Math.random()-.5)*.15,
+      a: Math.random()*.5+.15, af:(Math.random()>.5?1:-1)*(Math.random()*.006+.002)
+    });
+  }
+}
+initParticles();
+
+let neuralNodes = [];
+function initNeural(){
+  neuralNodes = [];
+  const n = isSmall()? 8 : 14;
+  for(let i=0;i<n;i++){
+    neuralNodes.push({
+      x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+      vx:(Math.random()-.5)*.08, vy:(Math.random()-.5)*.08
+    });
+  }
+}
+initNeural();
+
+function drawFrame(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.scale(DPR,DPR);
+
+  if(settings.bgParticles && !reduceMotion){
+    for(const p of particles){
+      p.x += p.vx; p.y += p.vy; p.a += p.af;
+      if(p.a<=.1 || p.a>=.65) p.af *= -1;
+      if(p.x<0) p.x=innerWidth; if(p.x>innerWidth) p.x=0;
+      if(p.y<0) p.y=innerHeight; if(p.y>innerHeight) p.y=0;
+      // subtle cursor repulsion
+      const dx = p.x-mouseX, dy = p.y-mouseY, dist = Math.hypot(dx,dy);
+      if(dist < 90){ p.x += dx/dist*0.6; p.y += dy/dist*0.6; }
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(150,180,255,${p.a})`;
+      ctx.fill();
+    }
+    // subtle connecting lines
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const a=particles[i], b=particles[j];
+        const d = Math.hypot(a.x-b.x, a.y-b.y);
+        if(d<80){
+          ctx.strokeStyle = `rgba(120,150,255,${(1-d/80)*.08})`;
+          ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+  }
+
+  if(settings.bgNeural && !reduceMotion){
+    for(const nd of neuralNodes){
+      nd.x+=nd.vx; nd.y+=nd.vy;
+      if(nd.x<0||nd.x>innerWidth) nd.vx*=-1;
+      if(nd.y<0||nd.y>innerHeight) nd.vy*=-1;
+    }
+    for(let i=0;i<neuralNodes.length;i++){
+      for(let j=i+1;j<neuralNodes.length;j++){
+        const a=neuralNodes[i], b=neuralNodes[j];
+        const d = Math.hypot(a.x-b.x,a.y-b.y);
+        if(d<260){
+          ctx.strokeStyle = `rgba(139,107,255,${(1-d/260)*.14})`;
+          ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+      ctx.beginPath(); ctx.arc(nd.x,nd.y,2,0,Math.PI*2);
+      ctx.fillStyle='rgba(139,107,255,.5)'; ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // cursor glow lerp
+  if(settings.bgCursorGlow && !reduceMotion){
+    glowX += (mouseX-glowX)*.08; glowY += (mouseY-glowY)*.08;
+    $('#cursorGlow').style.transform = `translate(${glowX}px, ${glowY}px) translate(-50%,-50%)`;
+  }
+
+  requestAnimationFrame(drawFrame);
+}
+requestAnimationFrame(drawFrame);
+window.addEventListener('resize', ()=>{ initParticles(); initNeural(); });
+
+/* ------------------------------------------------------------
+   BOOT SEQUENCE
+------------------------------------------------------------ */
+const bootLines = [
+  'SYSTEM INITIALIZING…','Connecting modules…',
+  'AI CORE ........ <b>ONLINE</b>','WEATHER ....... <b>ONLINE</b>','NEWS .......... <b>ONLINE</b>',
+  'MEDIA ......... <b>ONLINE</b>','GITHUB ........ <b>ONLINE</b>','SYSTEM ........ <b>READY</b>'
+];
+function runBoot(){
+  const boot = $('#boot'), statusEl = $('#bootStatus');
+  let i=0;
+  const interval = setInterval(()=>{
+    if(i>=bootLines.length){ clearInterval(interval); finishBoot(); return; }
+    const line = document.createElement('div');
+    line.className='boot-line'; line.style.animationDelay='0s';
+    line.innerHTML = '<span>'+bootLines[i]+'</span>';
+    statusEl.appendChild(line);
+    i++;
+  }, 280);
+  function finishBoot(){
+    setTimeout(()=>{
+      boot.style.opacity='0';
+      setTimeout(()=>{ boot.classList.add('hidden'); showLanding(); }, 600);
+    }, 500);
+  }
+}
+$('#skipIntro').addEventListener('click', ()=>{
+  $('#boot').classList.add('hidden');
+  showLanding();
+});
+function showLanding(){ $('#landing').classList.remove('hidden'); }
+
+if(store.get('skipBoot', false)){
+  $('#boot').classList.add('hidden');
+  showLanding();
+} else {
+  runBoot();
+  store.set('skipBoot', true);
+}
+
+/* ------------------------------------------------------------
+   LANDING -> APP
+------------------------------------------------------------ */
+$('#launchBtn').addEventListener('click', launchApp);
+$('#exploreBtn').addEventListener('click', ()=>{ launchApp(); switchPanel('dashboard'); });
+function launchApp(){
+  $('#landing').style.opacity='0'; $('#landing').style.transform='scale(1.04)';
+  setTimeout(()=>{
+    $('#landing').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    updateGreeting();
+  }, 480);
+}
+
+/* ------------------------------------------------------------
+   NAVIGATION
+------------------------------------------------------------ */
+const NAV_ITEMS = [
+  {id:'dashboard', ic:'home', label:'Dashboard'},
+  {id:'ai', ic:'sparkle', label:'NEXUS AI'},
+  {id:'weather', ic:'cloud', label:'Weather'},
+  {id:'movies', ic:'play', label:'Movies'},
+  {id:'music', ic:'music', label:'Music'},
+  {id:'news', ic:'newspaper', label:'News'},
+  {id:'games', ic:'gamepad', label:'Games'},
+  {id:'github', ic:'code', label:'GitHub'},
+  {id:'tasks', ic:'check', label:'Tasks'},
+  {id:'calendar', ic:'calendar', label:'Calendar'},
+  {id:'goals', ic:'target', label:'Goals'},
+  {id:'analytics', ic:'barchart', label:'Analytics'},
+];
+const navList = $('#navList');
+NAV_ITEMS.forEach(n=>{
+  const el = document.createElement('div');
+  el.className='nav-item'; el.dataset.panel=n.id;
+  el.innerHTML = `<span class="left"><span class="ic">${icon(n.ic)}</span><span class="lbl-text">${n.label}</span></span>`;
+  el.addEventListener('click', ()=>switchPanel(n.id));
+  navList.appendChild(el);
+});
+$('#navSettingsBtn').addEventListener('click', ()=>switchPanel('settings'));
+$('#aiTopBtn').addEventListener('click', ()=>switchPanel('ai'));
+
+const BOTTOM_NAV_IDS = ['dashboard','ai','tasks','github','settings'];
+const bottomNav = $('#bottomNav');
+BOTTOM_NAV_IDS.forEach(id=>{
+  const item = NAV_ITEMS.find(n=>n.id===id) || {id:'settings', ic:'settings', label:'Settings'};
+  const el = document.createElement('div');
+  el.className='bn-item'; el.dataset.panel=id;
+  el.innerHTML = `<span>${icon(item.ic)}</span><span>${item.label}</span>`;
+  el.addEventListener('click', ()=>switchPanel(id));
+  bottomNav.appendChild(el);
+});
+
+let currentPanel = 'dashboard';
+function switchPanel(id){
+  currentPanel = id;
+  $$('section[data-panel]').forEach(s=> s.hidden = s.dataset.panel !== id);
+  $$('.nav-item').forEach(n=> n.classList.toggle('active', n.dataset.panel===id));
+  $$('.bn-item').forEach(n=> n.classList.toggle('active', n.dataset.panel===id));
+  $('#content').scrollTo({top:0, behavior:'smooth'});
+  if(id==='ai') setTimeout(()=>$('#aiInput').focus(), 200);
+}
+switchPanel('dashboard');
+
+function updateGreeting(){
+  const h = new Date().getHours();
+  const g = h<5 ? 'Late night' : h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
+  $('#greeting').textContent = g;
+}
+
+/* ------------------------------------------------------------
+   MOCK / DEMO DATA SERVICES  (DEMO MODE — no live API keys)
+------------------------------------------------------------ */
+function seedRandom(seed){ let s=seed; return ()=>{ s = (s*9301+49297) % 233280; return s/233280; }; }
+
+/* ------------------------------------------------------------
+   WEATHER — Open-Meteo (no API key required)
+------------------------------------------------------------ */
+const WMO_MAP = {
+  0:['Clear sky','sun'],1:['Mainly clear','cloud-sun'],2:['Partly cloudy','cloud-sun'],3:['Overcast','cloud'],
+  45:['Fog','fog'],48:['Depositing fog','fog'],
+  51:['Light drizzle','cloud-drizzle'],53:['Drizzle','cloud-drizzle'],55:['Dense drizzle','cloud-drizzle'],
+  61:['Light rain','cloud-rain'],63:['Rain','cloud-rain'],65:['Heavy rain','cloud-rain'],
+  71:['Light snow','cloud-snow'],73:['Snow','cloud-snow'],75:['Heavy snow','cloud-snow'],
+  80:['Rain showers','cloud-drizzle'],81:['Rain showers','cloud-drizzle'],82:['Violent showers','cloud-lightning'],
+  95:['Thunderstorm','cloud-lightning'],96:['Thunderstorm w/ hail','cloud-lightning'],99:['Severe thunderstorm','cloud-lightning']
+};
+function wmoInfo(code){ return WMO_MAP[code] || ['Unknown',  'cloud-sun']; }
+const weatherService = {
+  demo(){
+    return {
+      city:'Bhopal, IN', temp:29, feels:32, humidity:58, wind:14, visibility:9.5, uv:6,
+      sunrise:'6:02 AM', sunset:'6:41 PM', condition:'Partly Cloudy', icon:'cloud-sun',
+      hourly:[27,28,29,30,29,28,27,26,26,27].map((t,i)=>({h:(new Date().getHours()+i)%24, t})),
+      daily:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i)=>({d, hi:29+((i*3)%5), lo:20+((i*2)%4), icon:['cloud-sun','sun','cloud-drizzle','sun','cloud-sun','sun','cloud-rain'][i]}))
+    };
+  },
+  async geocode(name){
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1`);
+    if(!res.ok) throw new Error('Geocoding failed: '+res.status);
+    const data = await res.json();
+    if(!data.results || !data.results.length) throw new Error('Location not found');
+    const r = data.results[0];
+    return { lat:r.latitude, lon:r.longitude, label:[r.name, r.admin1, r.country].filter(Boolean).join(', ') };
+  },
+  async live(cityName){
+    const loc = await this.geocode(cityName);
+    const params = 'current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code,visibility'
+      + '&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset,uv_index_max'
+      + '&timezone=auto&forecast_days=7';
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&${params}`);
+    if(!res.ok) throw new Error('Forecast failed: '+res.status);
+    const d = await res.json();
+    const [cond, icon] = wmoInfo(d.current.weather_code);
+    const nowHourIdx = d.hourly.time.findIndex(t => t.slice(0,13) === d.current.time.slice(0,13));
+    const startIdx = nowHourIdx >= 0 ? nowHourIdx : 0;
+    return {
+      city: loc.label, temp: Math.round(d.current.temperature_2m), feels: Math.round(d.current.apparent_temperature),
+      humidity: d.current.relative_humidity_2m, wind: Math.round(d.current.wind_speed_10m),
+      visibility: d.current.visibility ? +(d.current.visibility/1000).toFixed(1) : '—',
+      uv: d.daily.uv_index_max[0] ? Math.round(d.daily.uv_index_max[0]) : '—',
+      sunrise: new Date(d.daily.sunrise[0]).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}),
+      sunset: new Date(d.daily.sunset[0]).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}),
+      condition: cond, icon,
+      hourly: d.hourly.time.slice(startIdx, startIdx+10).map((t,i)=>({ h: new Date(t).getHours(), t: Math.round(d.hourly.temperature_2m[startIdx+i]) })),
+      daily: d.daily.time.map((t,i)=>{
+        const [,ic] = wmoInfo(d.daily.weather_code[i]);
+        return { d: new Date(t).toLocaleDateString([], {weekday:'short'}), hi: Math.round(d.daily.temperature_2m_max[i]), lo: Math.round(d.daily.temperature_2m_min[i]), icon: ic };
+      })
+    };
+  }
+};
+let weatherCache = null;
+async function getWeather(){
+  if(weatherCache) return weatherCache;
+  try{
+    const city = store.get('weatherCity', 'Bhopal');
+    weatherCache = { data: await weatherService.live(city), live:true };
+  }catch(err){
+    console.warn('Open-Meteo live fetch failed, using demo data:', err);
+    weatherCache = { data: weatherService.demo(), live:false };
+  }
+  return weatherCache;
+}
+function invalidateWeatherCache(){ weatherCache = null; }
+
+const newsCats = ['Technology','AI','Science','Gaming','Entertainment','World','Business'];
+const newsSources = ['ORBIT NEWS','SIGNAL DAILY','VECTOR WIRE','PRISM REPORT','LOOP MEDIA'];
+function genNews(cat, n){
+  const rnd = seedRandom(cat.length*7+n);
+  const headlines = {
+    Technology:['Chipmakers race to shrink next-gen processors','New protocol promises faster edge computing','Startup unveils modular hardware platform'],
+    AI:['Research lab open-sources reasoning benchmark','Enterprises adopt agentic workflows at scale','Study examines energy use of large models'],
+    Science:['Deep-sea expedition maps uncharted trench','Researchers extend battery life with new alloy','Telescope array detects unusual signal pattern'],
+    Gaming:['Indie studio surprises with genre-bending release','Esports league expands to three new regions','Remaster brings classic title to new hardware'],
+    Entertainment:['Streaming platform greenlights sci-fi anthology','Festival lineup blends new and legacy acts','Animation studio teases original feature'],
+    World:['Coastal cities pilot flood-resilient infrastructure','Trade talks continue between regional blocs','Cultural heritage site reopens after restoration'],
+    Business:['Markets steady as earnings season begins','Retailers lean into localized supply chains','Startup funding rebounds in key sectors']
+  };
+  const arr = [];
+  const pool = headlines[cat] || headlines.Technology;
+  for(let i=0;i<n;i++){
+    arr.push({
+      cat, title: pool[i%pool.length],
+      src: newsSources[Math.floor(rnd()*newsSources.length)],
+      time: (Math.floor(rnd()*11)+1)+'h ago',
+      color: ['#4f8cff','#8b6bff','#35e8ff','#3ddc97','#ffb84f'][Math.floor(rnd()*5)]
+    });
+  }
+  return arr;
+}
+const movieTitles = ['Echo Horizon','Silent Vector','The Last Signal','Nova Drift','Glass Meridian','Crimson Static','Hollow Orbit','Paper Skies','Neon Requiem','Deep Fathom','Iron Solstice','Halcyon Fall'];
+function genMovies(seedOffset, n){
+  const rnd = seedRandom(seedOffset*13+3);
+  const colors=[['#4f8cff','#0b1c4a'],['#8b6bff','#1c0b4a'],['#35e8ff','#062230'],['#ff5c72','#3a0b16'],['#ffb84f','#3a2606']];
+  return Array.from({length:n}).map((_,i)=>{
+    const c = colors[Math.floor(rnd()*colors.length)];
+    return {
+      title: movieTitles[Math.floor(rnd()*movieTitles.length)],
+      rating: (rnd()*2.5+6.5).toFixed(1),
+      year: 2022+Math.floor(rnd()*4),
+      genre: ['Sci‑Fi','Thriller','Drama','Action'][Math.floor(rnd()*4)],
+      grad:`linear-gradient(160deg, ${c[0]}, ${c[1]})`,
+      runtime: 95+Math.floor(rnd()*45),
+      overview:'A gripping story unfolds as unexpected forces converge, testing the limits of trust, ambition, and survival.'
+    };
+  });
+}
+const gameTitles = ['Aether Break','Void Runners','Circuit Ascend','Rust & Ruin','Shattered Vale','Nightframe','Solar Drift','Ember Protocol'];
+function genGames(seedOffset,n){
+  const rnd = seedRandom(seedOffset*17+9);
+  const colors=[['#3ddc97','#062318'],['#4f8cff','#0b1c4a'],['#a374ff','#1c0b4a'],['#ffb84f','#3a2606']];
+  return Array.from({length:n}).map(()=>{
+    const c = colors[Math.floor(rnd()*colors.length)];
+    return {
+      title: gameTitles[Math.floor(rnd()*gameTitles.length)],
+      rating:(rnd()*2+7).toFixed(1),
+      year:2023+Math.floor(rnd()*3),
+      platform:['PC','PS5','Xbox','Switch'][Math.floor(rnd()*4)],
+      grad:`linear-gradient(160deg, ${c[0]}, ${c[1]})`
+    };
+  });
+}
+function genGithub(username){
+  const rnd = seedRandom(username.length*23+5);
+  const langs = [{n:'TypeScript',c:'#4f8cff'},{n:'Python',c:'#ffb84f'},{n:'Rust',c:'#ff5c72'},{n:'Go',c:'#35e8ff'}];
+  const pct = langs.map(()=>Math.floor(rnd()*40)+10);
+  const total = pct.reduce((a,b)=>a+b,0);
+  return {
+    username, avatar:null, name:null, bio:null,
+    followers: Math.floor(rnd()*4000)+120, following: Math.floor(rnd()*300)+20,
+    repos: Math.floor(rnd()*90)+8, stars: Math.floor(rnd()*3000)+40, forks: Math.floor(rnd()*400)+10,
+    langs: langs.map((l,i)=>({...l, pct: Math.round(pct[i]/total*100)})),
+    repoList: Array.from({length:5}).map((_,i)=>({
+      name:['nexus-core','signal-engine','vector-ui','edge-runtime','orbit-cli'][i],
+      stars: Math.floor(rnd()*900), lang: langs[Math.floor(rnd()*langs.length)].n
+    })),
+    contrib: Array.from({length:130}).map(()=> Math.floor(rnd()*5))
+  };
+}
+
+/* ------------------------------------------------------------
+   DASHBOARD WIDGETS
+------------------------------------------------------------ */
+const dashGrid = $('#dashGrid');
+function widgetCard(title, tag, contentHtml, wide, onClick){
+  const el = document.createElement('div');
+  el.className = 'glass card' + (wide? ' wide':'');
+  el.innerHTML = `<div class="card-head"><h3>${title}</h3><span class="tag">${tag}</span></div>${contentHtml}`;
+  if(onClick) el.addEventListener('click', onClick);
+  return el;
+}
+function renderDashboard(){
+  dashGrid.innerHTML='';
+  dashGrid.appendChild(widgetCard('Weather','LIVE', `
+    <div class="weather-mini" id="dashWeatherRow"><div class="skeleton" style="width:80px;height:40px;"></div><div class="skeleton" style="width:38px;height:38px;border-radius:8px;"></div></div>`,
+    false, ()=>switchPanel('weather')));
+  setTimeout(renderDashWeatherWidget, 0); // defer: weatherService/getWeather declared later in this script
+
+  dashGrid.appendChild(widgetCard('News','TOP', `
+    <div class="news-list" id="dashNewsRow"><div class="skeleton" style="height:16px; margin-bottom:8px;"></div><div class="skeleton" style="height:16px; margin-bottom:8px;"></div><div class="skeleton" style="height:16px;"></div></div>`,
+    false, ()=>switchPanel('news')));
+  setTimeout(renderDashNewsWidget, 0); // defer: GNews helpers declared later in this script
+
+  dashGrid.appendChild(widgetCard('NEXUS AI','ASK', `
+    <p style="color:var(--text-1); font-size:13px; margin:0 0 12px;">"Plan my evening" · "Summarize today's news" · "Show my GitHub"</p>
+    <button class="btn-ghost" style="width:100%; padding:10px;">Open Assistant</button>`,
+    false, ()=>switchPanel('ai')));
+
+  const moviesWidgetEl = widgetCard('Movies','TRENDING', `<div class="poster-row" id="dashMoviesRow"><div class="skeleton" style="width:70px;height:100px;border-radius:8px;"></div><div class="skeleton" style="width:70px;height:100px;border-radius:8px;"></div><div class="skeleton" style="width:70px;height:100px;border-radius:8px;"></div><div class="skeleton" style="width:70px;height:100px;border-radius:8px;"></div></div>`, true, ()=>switchPanel('movies'));
+  dashGrid.appendChild(moviesWidgetEl);
+  setTimeout(renderDashMoviesWidget, 0); // defer: TMDB helpers declared later in this script
+
+  const musicWidgetEl = widgetCard('Music','SPOTIFY', `<div id="dashMusicRow"></div>`, false, ()=>switchPanel('music'));
+  dashGrid.appendChild(musicWidgetEl);
+  setTimeout(renderDashMusicWidget, 0); // defer: nowPlaying/Spotify helpers declared later in this script
+
+  const gamesWidgetEl = widgetCard('Games','POPULAR', `<div class="poster-row" id="dashGamesRow"><div class="skeleton" style="width:110px;height:64px;border-radius:8px;"></div><div class="skeleton" style="width:110px;height:64px;border-radius:8px;"></div><div class="skeleton" style="width:110px;height:64px;border-radius:8px;"></div></div>`, false, ()=>switchPanel('games'));
+  dashGrid.appendChild(gamesWidgetEl);
+  setTimeout(renderDashGamesWidget, 0); // defer: RAWG helpers are declared later in this script
+
+  dashGrid.appendChild(widgetCard('GitHub','PROFILE', `
+    <div class="gh-row" id="dashGithubRow"><div class="skeleton gh-avatar"></div>
+      <div style="flex:1;"><div class="skeleton" style="width:90px; height:13px; margin-bottom:6px;"></div><div class="skeleton" style="width:120px; height:11px;"></div></div>
+    </div>`, false, ()=>switchPanel('github')));
+  setTimeout(renderDashGithubWidget, 0); // defer: GitHub helpers declared later in this script
+
+  const tasks = store.get('tasks', defaultTasks()).filter(t=>!t.completed).slice(0,4);
+  dashGrid.appendChild(widgetCard('Tasks','TODAY', `
+    <div class="mini-list">${tasks.length? tasks.map(t=>`<div class="task-mini-row"><input type="checkbox" disabled><span>${t.title}</span></div>`).join(''): '<span style="color:var(--text-2); font-size:12.5px;">All clear. Nothing pending today.</span>'}</div>`,
+    false, ()=>switchPanel('tasks')));
+
+  dashGrid.appendChild(widgetCard('Calendar','UPCOMING', `
+    <div class="mini-list">
+      <div class="task-mini-row"><span class="chip" style="background:var(--accent); border:none; width:6px; height:6px; padding:0; border-radius:50%;"></span><span>Data Structures — Lecture, 10:00 AM</span></div>
+      <div class="task-mini-row"><span class="chip" style="background:var(--accent-2); border:none; width:6px; height:6px; padding:0; border-radius:50%;"></span><span>Team Sync, 3:30 PM</span></div>
+    </div>`, false, ()=>switchPanel('calendar')));
+
+  const goals = store.get('goals', defaultGoals());
+  const g0 = goals[0];
+  dashGrid.appendChild(widgetCard('Goals','PROGRESS', `
+    <div class="goal-ring">
+      <svg class="ring-svg" viewBox="0 0 52 52"><circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="5"/>
+      <circle cx="26" cy="26" r="22" fill="none" stroke="var(--accent-3)" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="${2*Math.PI*22}" stroke-dashoffset="${2*Math.PI*22*(1-g0.progress/g0.target)}" transform="rotate(-90 26 26)"/></svg>
+      <div><div style="font-size:13.5px; font-weight:600;">${g0.title}</div><div style="font-size:11.5px; color:var(--text-2);">${g0.progress}/${g0.target} ${g0.unit}</div></div>
+    </div>`, false, ()=>switchPanel('goals')));
+
+  const qa = document.createElement('div');
+  qa.className='glass card wide';
+  qa.innerHTML = `<div class="card-head"><h3>Quick Actions</h3><span class="tag">JUMP IN</span></div>
+    <div class="qa-grid">
+      <div class="qa-btn" data-qa="focus"><span style="font-size:18px;">${icon('clock')}</span><span style="font-size:12.5px;">Start Focus Session</span></div>
+      <div class="qa-btn" data-qa="ai"><span style="font-size:18px;">${icon('sparkle')}</span><span style="font-size:12.5px;">Ask NEXUS AI</span></div>
+      <div class="qa-btn" data-qa="task"><span style="font-size:18px;">${icon('plus')}</span><span style="font-size:12.5px;">Add a Task</span></div>
+      <div class="qa-btn" data-qa="search"><span style="font-size:18px;">${icon('command')}</span><span style="font-size:12.5px;">Universal Search</span></div>
+    </div>`;
+  dashGrid.appendChild(qa);
+  qa.querySelectorAll('.qa-btn').forEach(b=>b.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const a = b.dataset.qa;
+    if(a==='focus') openFocus();
+    if(a==='ai') switchPanel('ai');
+    if(a==='task'){ switchPanel('tasks'); setTimeout(()=>$('#newTaskInput').focus(),150); }
+    if(a==='search') openPalette();
+  }));
+}
+renderDashboard();
+
+/* ------------------------------------------------------------
+   WEATHER PANEL
+------------------------------------------------------------ */
+async function renderWeatherPanel(){
+  $('#weatherPanelBody').innerHTML = `
+    <div class="gh-search" style="margin-bottom:18px;">
+      <input id="weatherCityInput" type="text" placeholder="Search a city…" value="${store.get('weatherCity','Bhopal')}">
+      <button class="btn-primary" id="weatherCityBtn" style="padding:11px 20px;">SET</button>
+    </div>
+    <div class="grid-dash" id="weatherPanelGrid">
+      <div class="glass card wide"><div class="skeleton" style="height:64px;"></div></div>
+    </div>`;
+  $('#weatherCityBtn').addEventListener('click', async ()=>{
+    const v = $('#weatherCityInput').value.trim();
+    if(!v) return;
+    store.set('weatherCity', v);
+    invalidateWeatherCache();
+    weatherCache = null; // force re-fetch for new city
+    await paintWeatherPanel();
+  });
+  await paintWeatherPanel();
+}
+async function paintWeatherPanel(){
+  const { data: w, live } = await getWeather();
+  if(currentPanel!=='weather') return; // navigated away while loading
+  $('#weatherPanelGrid').innerHTML = `
+      <div class="glass card wide">
+        <div class="weather-mini">
+          <div><div class="temp">${w.temp}°C</div><div class="desc">Feels like ${w.feels}° · ${w.condition}</div><div class="desc">${w.city}</div></div>
+          <div class="wmini-icon" style="font-size:64px;">${icon(w.icon)}</div>
+        </div>
+      </div>
+      <div class="glass card"><div class="card-head"><h3>Humidity</h3></div><div class="temp" style="font-size:26px;">${w.humidity}%</div></div>
+      <div class="glass card"><div class="card-head"><h3>Wind</h3></div><div class="temp" style="font-size:26px;">${w.wind} km/h</div></div>
+      <div class="glass card"><div class="card-head"><h3>Visibility</h3></div><div class="temp" style="font-size:26px;">${w.visibility} km</div></div>
+      <div class="glass card"><div class="card-head"><h3>UV Index</h3></div><div class="temp" style="font-size:26px;">${w.uv}</div></div>
+      <div class="glass card"><div class="card-head"><h3>Sunrise</h3></div><div class="temp" style="font-size:22px;">${w.sunrise}</div></div>
+      <div class="glass card"><div class="card-head"><h3>Sunset</h3></div><div class="temp" style="font-size:22px;">${w.sunset}</div></div>
+      <div class="glass card wide">
+        <div class="card-head"><h3>Hourly Forecast</h3></div>
+        <div style="display:flex; gap:14px; overflow-x:auto; padding-bottom:4px;">
+          ${w.hourly.map(h=>`<div style="text-align:center; flex-shrink:0;"><div style="font-size:11px; color:var(--text-2); font-family:var(--font-mono);">${h.h}:00</div><div style="font-size:20px; margin:6px 0;">${icon(w.icon)}</div><div style="font-size:13px;">${h.t}°</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="glass card wide">
+        <div class="card-head"><h3>7‑Day Forecast</h3></div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${w.daily.map(d=>`<div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;"><span style="width:50px;">${d.d}</span><span style="font-size:18px;">${icon(d.icon)}</span><span style="color:var(--text-2);">${d.lo}°</span><div class="progress-track" style="flex:1; margin:0 10px;"><div class="progress-fill" style="width:${Math.min(100,(d.hi/45)*100)}%"></div></div><span>${d.hi}°</span></div>`).join('')}
+        </div>
+      </div>`;
+  if(!live) toast('Open-Meteo unavailable — showing demo weather data', 'warn');
+}
+
+/* ------------------------------------------------------------
+   MOVIES PANEL — TMDB API (proxied through /api/tmdb — the key
+   lives only in server/.env, never in this file)
+------------------------------------------------------------ */
+const TMDB_BASE = '/api/tmdb';
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
+const TMDB_GENRES = {28:'Action',12:'Adventure',16:'Animation',35:'Comedy',80:'Crime',99:'Documentary',18:'Drama',10751:'Family',14:'Fantasy',36:'History',27:'Horror',10402:'Music',9648:'Mystery',10749:'Romance',878:'Science Fiction',10770:'TV Movie',53:'Thriller',10752:'War',37:'Western'};
+const movieCache = {};
+async function fetchTmdbList(tab){
+  const endpoint = { Trending:'/trending/movie/week', Popular:'/movie/popular', 'Top Rated':'/movie/top_rated', Upcoming:'/movie/upcoming' }[tab];
+  const res = await fetch(`${TMDB_BASE}${endpoint}?language=en-US&page=1`);
+  if(!res.ok) throw new Error('TMDB request failed: '+res.status);
+  const data = await res.json();
+  if(!data.results || !data.results.length) throw new Error('No movies returned');
+  return data.results.map(m=>({
+    id: m.id, title: m.title, rating: (m.vote_average||0).toFixed(1),
+    year: (m.release_date||'').slice(0,4) || '—',
+    genre: TMDB_GENRES[m.genre_ids && m.genre_ids[0]] || 'Film',
+    image: m.poster_path ? TMDB_IMG+m.poster_path : null,
+    backdrop: m.backdrop_path ? TMDB_BACKDROP+m.backdrop_path : null,
+    overview: m.overview || 'No overview available.',
+    grad: 'linear-gradient(160deg, #4f8cff, #0b1c4a)'
+  }));
+}
+async function fetchTmdbDetail(id){
+  const res = await fetch(`${TMDB_BASE}/movie/${id}?language=en-US&append_to_response=credits,videos,similar`);
+  if(!res.ok) throw new Error('TMDB detail failed: '+res.status);
+  const d = await res.json();
+  const trailer = ((d.videos && d.videos.results) || []).find(v=>v.type==='Trailer' && v.site==='YouTube');
+  return {
+    runtime: d.runtime || null,
+    genres: (d.genres||[]).map(g=>g.name),
+    cast: ((d.credits && d.credits.cast) || []).slice(0,5).map(c=>c.name),
+    trailerKey: trailer ? trailer.key : null,
+    similar: ((d.similar && d.similar.results) || []).slice(0,6).map(s=>({ id:s.id, title:s.title, image: s.poster_path ? TMDB_IMG+s.poster_path : null }))
+  };
+}
+
+const movieTabsData = ['Trending','Popular','Top Rated','Upcoming'];
+let activeMovieTab = 0;
+function renderMovieTabs(){
+  $('#movieTabs').innerHTML = movieTabsData.map((t,i)=>`<div class="chip ${i===activeMovieTab?'active':''}" data-i="${i}">${t}</div>`).join('');
+  $$('#movieTabs .chip').forEach(c=>c.addEventListener('click', ()=>{ activeMovieTab=+c.dataset.i; renderMovieTabs(); renderMovieGrid(); }));
+}
+function movieSkeletons(n){
+  return Array.from({length:n}).map(()=>`<div class="media-card"><div class="skeleton media-poster" style="height:210px;"></div><div class="skeleton" style="height:52px; margin-top:2px;"></div></div>`).join('');
+}
+async function renderMovieGrid(){
+  const tab = movieTabsData[activeMovieTab];
+  $('#movieGrid').innerHTML = movieSkeletons(10);
+  let list, live = true;
+  if(movieCache[tab]){
+    list = movieCache[tab];
+  } else {
+    try{
+      list = await fetchTmdbList(tab);
+      movieCache[tab] = list;
+    }catch(err){
+      console.warn('TMDB live fetch failed, using demo data:', err);
+      live = false;
+      list = genMovies(activeMovieTab+2, 10);
+    }
+  }
+  if(currentPanel!=='movies' || movieTabsData[activeMovieTab]!==tab) return; // navigated / switched tabs while loading
+  $('#movieGrid').innerHTML = list.map((m,i)=>`
+    <div class="media-card glass" data-i="${i}">
+      <div class="media-poster" style="background:${m.image ? `url('${m.image}') center/cover` : m.grad}">${m.image?'':m.title}</div>
+      <div class="media-info"><div class="r">${icon('star',12)} ${m.rating}</div><h4>${m.title}</h4><div class="d">${m.year} · ${m.genre}</div></div>
+    </div>`).join('');
+  if(!live) toast('TMDB unavailable — showing demo movie data', 'warn');
+  $$('#movieGrid .media-card').forEach((el,i)=> el.addEventListener('click', ()=>openMovieModal(list[i])));
+}
+async function openMovieModal(m){
+  showModal(`
+    <div class="modal-hero" style="background:${m.backdrop ? `url('${m.backdrop}') center/cover` : m.grad}">${m.backdrop?'':`<h2 style="margin:0; font-family:var(--font-display);">${m.title}</h2>`}</div>
+    <div class="modal-body" id="movieModalBody">
+      <h2 style="margin:0 0 10px; font-family:var(--font-display);">${m.title}</h2>
+      <div style="display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
+        <span class="chip">${icon('star',12)} ${m.rating}</span><span class="chip">${m.year}</span><span class="chip">${m.genre}</span>
+      </div>
+      <p style="color:var(--text-1); line-height:1.6; font-size:13.5px;">${escapeHtml(m.overview)}</p>
+      <div class="skeleton" style="height:40px; margin-top:14px;"></div>
+    </div>`);
+  if(!m.id) return; // demo-data fallback movie has no real id to look up
+  try{
+    const detail = await fetchTmdbDetail(m.id);
+    const body = document.getElementById('movieModalBody');
+    if(!body) return; // modal already closed
+    body.innerHTML = `
+      <h2 style="margin:0 0 10px; font-family:var(--font-display);">${m.title}</h2>
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <span class="chip">${icon('star',12)} ${m.rating}</span><span class="chip">${m.year}</span>
+        ${detail.runtime ? `<span class="chip">${detail.runtime} min</span>` : ''}
+        ${detail.genres.map(g=>`<span class="chip">${g}</span>`).join('')}
+      </div>
+      <p style="color:var(--text-1); line-height:1.6; font-size:13.5px;">${escapeHtml(m.overview)}</p>
+      ${detail.cast.length ? `<div class="eyebrow" style="margin:16px 0 8px;">CAST</div><p style="color:var(--text-1); font-size:13px; margin:0;">${detail.cast.map(c=>escapeHtml(c)).join(', ')}</p>` : ''}
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        ${detail.trailerKey ? `<a class="btn-primary" style="padding:11px 20px; display:inline-flex; align-items:center; gap:6px; text-decoration:none;" href="https://www.youtube.com/watch?v=${detail.trailerKey}" target="_blank" rel="noopener">${icon('play',14)} Trailer</a>` : ''}
+        <button class="btn-ghost" style="padding:11px 20px; display:inline-flex; align-items:center; gap:6px;">${icon('plus',14)} Watchlist</button>
+      </div>
+      ${detail.similar.length ? `<div class="eyebrow" style="margin:20px 0 8px;">SIMILAR MOVIES</div><div style="display:flex; gap:10px; overflow-x:auto;">${detail.similar.map(s=>`<div style="width:80px; flex-shrink:0; text-align:center;"><div style="width:80px; height:112px; border-radius:8px; background:${s.image?`url('${s.image}') center/cover`:'linear-gradient(160deg,#4f8cff,#0b1c4a)'};"></div><div style="font-size:10.5px; margin-top:4px; color:var(--text-1);">${escapeHtml(s.title)}</div></div>`).join('')}</div>` : ''}
+    `;
+  }catch(err){
+    console.warn('TMDB detail fetch failed:', err);
+  }
+}
+
+/* ------------------------------------------------------------
+   MUSIC PANEL — Spotify search (server-side Client Credentials,
+   proxied through /api/spotify/search — the key never reaches
+   the browser) + Spotify's official embedded player <iframe>
+   for actual in-app playback. Get a client id/secret at
+   https://developer.spotify.com/dashboard and put them in
+   server/.env as SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET.
+
+   Even without a key configured, pasting a spotify.com link or
+   spotify: URI still works — it's embedded directly, no API
+   call needed — so Music is never fully blocked on a key.
+------------------------------------------------------------ */
+const SPOTIFY_BASE = '/api/spotify';
+let spotifyConfigured = null; // null = unknown yet, checked lazily
+let lastSpotifyResults = [];
+let nowPlaying = null; // {type, id, name, artists, image}
+
+function spotifyEmbedHtml(type, id){
+  return `<iframe title="Spotify player" style="border-radius:14px;" src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0"
+    width="100%" height="152" frameBorder="0"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+}
+function parseSpotifyLink(raw){
+  const s = raw.trim();
+  let m = s.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]+)/i);
+  if(m) return { type: m[1].toLowerCase(), id: m[2] };
+  m = s.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]+)$/i);
+  if(m) return { type: m[1].toLowerCase(), id: m[2] };
+  return null;
+}
+function fmtDuration(ms){
+  if(!ms && ms !== 0) return '';
+  const s = Math.round(ms/1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function nowPlayingHtml(){
+  if(!nowPlaying) return '';
+  return `<div class="glass card wide" style="margin-bottom:16px;">
+    <div class="eyebrow" style="margin-bottom:10px;">NOW PLAYING</div>
+    ${spotifyEmbedHtml(nowPlaying.type, nowPlaying.id)}
+  </div>`;
+}
+function musicResultsHtml(){
+  if(!lastSpotifyResults.length) return '';
+  return `<div class="eyebrow" style="margin-bottom:10px;">RESULTS</div>
+    <div class="grid-dash" id="musicResultsGrid">${lastSpotifyResults.map((tr,i)=>`
+      <div class="glass card" data-idx="${i}" style="cursor:pointer;">
+        <div class="player-bar">
+          <div class="player-art" style="${tr.image?`background:url('${tr.image}') center/cover;`:''}"></div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(tr.name)}</div>
+            <div style="font-size:11.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(tr.artists)}</div>
+          </div>
+          <div style="font-size:11px; color:var(--text-2); flex-shrink:0;">${fmtDuration(tr.durationMs)}</div>
+        </div>
+      </div>`).join('')}</div>`;
+}
+function pasteLinkHtml(){
+  return `<div class="glass card wide" style="margin-top:16px;">
+    <div class="card-head"><h3>Have a Spotify link?</h3></div>
+    <p style="font-size:12.5px; color:var(--text-2); margin:0 0 12px;">Paste any track, album, or playlist link (or spotify: URI) to play it here — no search needed.</p>
+    <div class="gh-search" style="max-width:none;">
+      <input id="musicLinkInput" type="text" placeholder="https://open.spotify.com/track/… or spotify:track:…">
+      <button class="btn-ghost" id="musicLinkBtn" style="padding:11px 20px;">EMBED</button>
+    </div>
+  </div>`;
+}
+function renderMusicBody(){
+  let notice = '';
+  if(spotifyConfigured === false){
+    notice = `<div class="glass card wide" style="margin-bottom:16px; color:var(--text-2); font-size:12.5px;">
+      Search isn't configured yet — add <code>SPOTIFY_CLIENT_ID</code> and <code>SPOTIFY_CLIENT_SECRET</code> to <code>server/.env</code> (free at
+      <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener" style="color:var(--accent-3);">developer.spotify.com</a>) to search the catalog.
+      Pasting a Spotify link below still works right away.
+    </div>`;
+  }
+  $('#musicPanelBody').innerHTML = notice + nowPlayingHtml() + musicResultsHtml() + pasteLinkHtml();
+  renderDashMusicWidget();
+  const grid = document.getElementById('musicResultsGrid');
+  if(grid) grid.querySelectorAll('[data-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const tr = lastSpotifyResults[+el.dataset.idx];
+      nowPlaying = { type:'track', id: tr.id, name: tr.name, artists: tr.artists, image: tr.image };
+      renderMusicBody();
+    });
+  });
+  const linkBtn = document.getElementById('musicLinkBtn');
+  if(linkBtn) linkBtn.addEventListener('click', ()=>{
+    const val = document.getElementById('musicLinkInput').value;
+    const parsed = parseSpotifyLink(val);
+    if(!parsed){ toast('Paste a valid Spotify link or URI', 'warn'); return; }
+    nowPlaying = { type: parsed.type, id: parsed.id };
+    renderMusicBody();
+  });
+}
+async function checkSpotifyConfigured(){
+  if(spotifyConfigured !== null) return spotifyConfigured;
+  try{
+    const r = await fetch(`${SPOTIFY_BASE}/health`);
+    const d = await r.json();
+    spotifyConfigured = !!d.configured;
+  }catch(err){ spotifyConfigured = false; }
+  return spotifyConfigured;
+}
+async function performMusicSearch(query){
+  const q = query.trim();
+  if(!q) return;
+  // A pasted link/URI can be embedded directly, no API call needed.
+  const parsed = parseSpotifyLink(q);
+  if(parsed){ nowPlaying = { type: parsed.type, id: parsed.id }; renderMusicBody(); return; }
+  const configured = await checkSpotifyConfigured();
+  if(!configured){ renderMusicBody(); toast('Spotify search not configured — see note below', 'warn'); return; }
+  $('#musicPanelBody').innerHTML = `${nowPlayingHtml()}<div class="glass card wide"><div class="skeleton" style="height:16px; margin-bottom:8px;"></div><div class="skeleton" style="height:16px; margin-bottom:8px;"></div><div class="skeleton" style="height:16px;"></div></div>`;
+  try{
+    const res = await fetch(`${SPOTIFY_BASE}/search?q=${encodeURIComponent(q)}&type=track&limit=10`);
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error(data.message || 'Search failed');
+    lastSpotifyResults = data.tracks || [];
+    renderMusicBody();
+    if(!lastSpotifyResults.length) toast('No tracks found', 'warn');
+  }catch(err){
+    console.warn('Spotify search failed:', err);
+    renderMusicBody();
+    toast('Spotify search failed', 'error');
+  }
+}
+function renderMusic(){
+  renderMusicBody();
+  checkSpotifyConfigured().then(()=>renderMusicBody());
+}
+function renderDashMusicWidget(){
+  const row = document.getElementById('dashMusicRow');
+  if(!row) return;
+  if(nowPlaying){
+    row.innerHTML = `<div class="player-bar">
+      <div class="player-art" style="${nowPlaying.image?`background:url('${nowPlaying.image}') center/cover;`:''}"></div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(nowPlaying.name || 'Now playing')}</div>
+        <div style="font-size:11.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(nowPlaying.artists || 'Spotify')}</div>
+      </div>
+      <div class="eq"><span></span><span></span><span></span><span></span></div>
+    </div>`;
+  } else {
+    row.innerHTML = `<div style="font-size:13px; color:var(--text-2); padding:6px 0;">Nothing playing — search or paste a Spotify link.</div>`;
+  }
+}
+$('#musicSearchBtn').addEventListener('click', ()=> performMusicSearch($('#musicSearchInput').value));
+$('#musicSearchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') performMusicSearch($('#musicSearchInput').value); });
+
+/* ------------------------------------------------------------
+   NEWS PANEL — GNews API (gnews.io), proxied through /api/gnews.
+   Free tier: 100 requests/day. Get a key at https://gnews.io and
+   put it in server/.env as GNEWS_API_KEY — never in this file.
+------------------------------------------------------------ */
+const GNEWS_BASE = '/api/gnews';
+const GNEWS_CATEGORY_MAP = { Technology:'technology', Science:'science', Entertainment:'entertainment', Business:'business', World:'world' };
+const GNEWS_QUERY_MAP = { AI:'artificial intelligence', Gaming:'video games' };
+const newsCache = {};
+function timeAgo(iso){
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.max(1, Math.round(diffMs/60000));
+  if(mins < 60) return mins+'m ago';
+  const hrs = Math.round(mins/60);
+  if(hrs < 24) return hrs+'h ago';
+  return Math.round(hrs/24)+'d ago';
+}
+async function fetchNewsApi(cat){
+  const colors = ['#4f8cff','#8b6bff','#35e8ff','#3ddc97','#ffb84f'];
+  let url;
+  if(GNEWS_CATEGORY_MAP[cat]){
+    url = `${GNEWS_BASE}/top-headlines?category=${GNEWS_CATEGORY_MAP[cat]}&lang=en&max=10`;
+  } else {
+    // AI / Gaming have no direct top-headlines category — use /search instead
+    url = `${GNEWS_BASE}/search?q=${encodeURIComponent(GNEWS_QUERY_MAP[cat] || cat)}&lang=en&sortby=publishedAt&max=10`;
+  }
+  const res = await fetch(url);
+  if(!res.ok){
+    const body = await res.text().catch(()=>'');
+    throw new Error('GNews request failed: '+res.status+' '+body);
+  }
+  const data = await res.json();
+  if(!data.articles || !data.articles.length) throw new Error('No articles returned');
+  return data.articles.map((a,i)=>({
+    cat, title: a.title, src: (a.source && a.source.name) || 'Unknown',
+    time: timeAgo(a.publishedAt), url: a.url, image: a.image || null,
+    color: colors[i % colors.length]
+  }));
+}
+
+let activeNewsCat = 'Technology';
+function renderNewsTabs(){
+  $('#newsTabs').innerHTML = newsCats.map(c=>`<div class="chip ${c===activeNewsCat?'active':''}" data-c="${c}">${c}</div>`).join('');
+  $$('#newsTabs .chip').forEach(c=>c.addEventListener('click', ()=>{ activeNewsCat=c.dataset.c; renderNewsTabs(); renderNewsGrid(); }));
+}
+function newsSkeletons(n){
+  return Array.from({length:n}).map(()=>`<div class="glass article-card"><div class="skeleton" style="height:120px;"></div><div class="article-body"><div class="skeleton" style="height:14px; margin-bottom:8px;"></div><div class="skeleton" style="height:10px; width:60%;"></div></div></div>`).join('');
+}
+async function renderNewsGrid(){
+  const cat = activeNewsCat;
+  $('#newsGrid').innerHTML = newsSkeletons(6);
+  let list, live = true;
+  if(newsCache[cat]){
+    list = newsCache[cat];
+  } else {
+    try{
+      list = await fetchNewsApi(cat);
+      newsCache[cat] = list;
+    }catch(err){
+      console.warn('GNews live fetch failed, using demo data:', err);
+      live = false;
+      list = genNews(cat, 6);
+    }
+  }
+  if(currentPanel!=='news' || activeNewsCat!==cat) return; // navigated / switched tabs while loading
+  $('#newsGrid').innerHTML = list.map(a=>`
+    <a class="glass article-card" ${a.url?`href="${a.url}" target="_blank" rel="noopener"`:''} style="text-decoration:none; color:inherit; display:block;">
+      <div class="article-img" style="background:${a.image ? `url('${a.image}') center/cover` : `linear-gradient(135deg, ${a.color}33, transparent)`};">
+        <span class="chip" style="background:${a.color}22; border-color:${a.color}66;">${a.cat}</span>
+      </div>
+      <div class="article-body"><h4>${a.title}</h4><div class="article-meta"><span>${a.src}</span><span>·</span><span>${a.time}</span></div></div>
+    </a>`).join('');
+  if(!live) toast('GNews unavailable — showing demo news data', 'warn');
+}
+
+/* ------------------------------------------------------------
+   GAMES PANEL — RAWG API, proxied through /api/rawg (key lives
+   only in server/.env as RAWG_API_KEY).
+------------------------------------------------------------ */
+const RAWG_BASE = '/api/rawg';
+const gameCache = {};
+function rawgDateRange(days){
+  const fmt = d => d.toISOString().slice(0,10);
+  const today = new Date();
+  const other = new Date(); other.setDate(today.getDate()+days);
+  return days < 0 ? `${fmt(other)},${fmt(today)}` : `${fmt(today)},${fmt(other)}`;
+}
+async function fetchRawgList(tab){
+  let params = `page_size=12`;
+  if(tab==='Trending') params += `&dates=${rawgDateRange(-60)}&ordering=-added`;
+  if(tab==='Popular') params += `&ordering=-rating`;
+  if(tab==='Upcoming') params += `&dates=${rawgDateRange(90)}&ordering=-added`;
+  const res = await fetch(`${RAWG_BASE}/games?${params}`);
+  if(!res.ok) throw new Error('RAWG request failed: '+res.status);
+  const data = await res.json();
+  return (data.results||[]).map(g=>({
+    id: g.id, title: g.name,
+    rating: g.rating ? g.rating.toFixed(1) : '—',
+    year: g.released ? g.released.slice(0,4) : '—',
+    platform: (g.parent_platforms && g.parent_platforms[0] && g.parent_platforms[0].platform.name) || 'Multi',
+    image: g.background_image || null,
+    grad: 'linear-gradient(160deg, #4f8cff, #0b1c4a)'
+  }));
+}
+async function fetchRawgDetail(id){
+  const [detailRes, shotsRes] = await Promise.all([
+    fetch(`${RAWG_BASE}/games/${id}`),
+    fetch(`${RAWG_BASE}/games/${id}/screenshots`)
+  ]);
+  if(!detailRes.ok) throw new Error('RAWG detail failed: '+detailRes.status);
+  const detail = await detailRes.json();
+  const shots = shotsRes.ok ? await shotsRes.json() : {results:[]};
+  return {
+    description: (detail.description_raw || 'No description available.').split('\\n')[0].slice(0,500),
+    genres: (detail.genres||[]).map(g=>g.name),
+    platforms: (detail.platforms||[]).map(p=>p.platform.name),
+    released: detail.released || '—',
+    metacritic: detail.metacritic,
+    screenshots: (shots.results||[]).slice(0,4).map(s=>s.image)
+  };
+}
+
+async function renderDashMoviesWidget(){
+  const row = document.getElementById('dashMoviesRow');
+  if(!row) return;
+  let list, live = true;
+  if(movieCache['Trending']){
+    list = movieCache['Trending'];
+  } else {
+    try{
+      list = await fetchTmdbList('Trending');
+      movieCache['Trending'] = list;
+    }catch(err){
+      console.warn('TMDB dashboard widget fetch failed, using demo data:', err);
+      live = false;
+      list = genMovies(1,4);
+    }
+  }
+  const row2 = document.getElementById('dashMoviesRow');
+  if(!row2) return;
+  row2.innerHTML = list.slice(0,4).map(m=>`<div class="poster" style="background:${m.image ? `url('${m.image}') center/cover` : m.grad}">${m.image?'':m.title}</div>`).join('');
+}
+
+async function renderDashWeatherWidget(){
+  const row = document.getElementById('dashWeatherRow');
+  if(!row) return;
+  const { data: w } = await getWeather();
+  const row2 = document.getElementById('dashWeatherRow');
+  if(!row2) return;
+  row2.innerHTML = `<div><div class="temp">${w.temp}°</div><div class="desc">${w.condition} · ${w.city}</div></div><div class="wmini-icon" style="font-size:32px;">${icon(w.icon)}</div>`;
+}
+async function renderDashNewsWidget(){
+  const row = document.getElementById('dashNewsRow');
+  if(!row) return;
+  let list;
+  try{ list = await fetchNewsApi('Technology'); }
+  catch(err){ console.warn('GNews dashboard widget failed, using demo data:', err); list = genNews('Technology',3); }
+  const row2 = document.getElementById('dashNewsRow');
+  if(!row2) return;
+  list = list.slice(0,3);
+  row2.innerHTML = list.map(a=>`<a class="news-row" ${a.url?`href="${a.url}" target="_blank" rel="noopener"`:''} style="text-decoration:none; color:inherit; cursor:${a.url?'pointer':'default'};"><span class="dot" style="background:${a.color}"></span><div><div>${a.title}</div><span class="src">${a.src} · ${a.time}</span></div></a>`).join('');
+}
+
+async function renderDashGamesWidget(){
+  const row = document.getElementById('dashGamesRow');
+  if(!row) return; // widget no longer on screen
+  let list, live = true;
+  if(gameCache['Popular']){
+    list = gameCache['Popular'];
+  } else {
+    try{
+      list = await fetchRawgList('Popular');
+      gameCache['Popular'] = list;
+    }catch(err){
+      console.warn('RAWG dashboard widget fetch failed, using demo data:', err);
+      live = false;
+      list = genGames(1,3);
+    }
+  }
+  const row2 = document.getElementById('dashGamesRow');
+  if(!row2) return;
+  row2.innerHTML = list.slice(0,3).map(g=>`<div class="game-cover" style="background:${g.image ? `url('${g.image}') center/cover` : g.grad}">${g.image?'':g.title}</div>`).join('');
+}
+
+async function renderDashGithubWidget(){
+  const row = document.getElementById('dashGithubRow');
+  if(!row) return;
+  const username = store.get('ghUsername','octocat');
+  let gh;
+  if(githubCache[username]){
+    gh = githubCache[username];
+  } else {
+    try{
+      gh = await fetchGithubData(username);
+      githubCache[username] = gh;
+    }catch(err){
+      console.warn('GitHub dashboard widget fetch failed, using demo data:', err);
+      gh = genGithub(username);
+    }
+  }
+  const row2 = document.getElementById('dashGithubRow');
+  if(!row2) return;
+  row2.innerHTML = `<div class="gh-avatar" style="${gh.avatar?`background:url('${gh.avatar}') center/cover;`:''}"></div>
+    <div><div style="font-weight:600; font-size:13.5px;">${escapeHtml(gh.username)}</div><div style="font-size:11.5px; color:var(--text-2);">${gh.repos} repos · ${gh.stars} stars</div></div>`;
+}
+
+const gameTabsData = ['Trending','Popular','Upcoming'];
+let activeGameTab = 0;
+function renderGameTabs(){
+  $('#gameTabs').innerHTML = gameTabsData.map((t,i)=>`<div class="chip ${i===activeGameTab?'active':''}" data-i="${i}">${t}</div>`).join('');
+  $$('#gameTabs .chip').forEach(c=>c.addEventListener('click', ()=>{ activeGameTab=+c.dataset.i; renderGameTabs(); renderGameGrid(); }));
+}
+function gameSkeletons(n){
+  return Array.from({length:n}).map(()=>`<div class="media-card"><div class="skeleton media-poster" style="height:130px;"></div><div class="skeleton" style="height:52px; margin-top:2px;"></div></div>`).join('');
+}
+async function renderGameGrid(){
+  const tab = gameTabsData[activeGameTab];
+  $('#gameGrid').innerHTML = gameSkeletons(10);
+  let list, live = true;
+  if(gameCache[tab]){
+    list = gameCache[tab];
+  } else {
+    try{
+      list = await fetchRawgList(tab);
+      gameCache[tab] = list;
+    }catch(err){
+      console.warn('RAWG live fetch failed, using demo data:', err);
+      live = false;
+      list = genGames(activeGameTab+1, 10);
+    }
+  }
+  if(currentPanel!=='games') return; // user navigated away while loading
+  $('#gameGrid').innerHTML = list.map((g,i)=>`
+    <div class="media-card glass" data-i="${i}">
+      <div class="media-poster" style="background:${g.image ? `url('${g.image}') center/cover` : g.grad}">${g.image?'':g.title}</div>
+      <div class="media-info"><div class="r">${icon('star',12)} ${g.rating}</div><h4>${g.title}</h4><div class="d">${g.year} · ${g.platform}</div></div>
+    </div>`).join('');
+  if(!live) toast('RAWG unavailable — showing demo game data', 'warn');
+  $$('#gameGrid .media-card').forEach((el,i)=> el.addEventListener('click', ()=>openGameModal(list[i])));
+}
+async function openGameModal(g){
+  showModal(`
+    <div class="modal-hero" style="background:${g.image ? `url('${g.image}') center/cover` : g.grad}">${g.image?'':`<h2 style="margin:0; font-family:var(--font-display);">${g.title}</h2>`}</div>
+    <div class="modal-body" id="gameModalBody">
+      <h2 style="margin:0 0 10px; font-family:var(--font-display);">${g.title}</h2>
+      <div style="display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;"><span class="chip">${icon('star',12)} ${g.rating}</span><span class="chip">${g.year}</span><span class="chip">${g.platform}</span></div>
+      <div class="skeleton" style="height:80px;"></div>
+    </div>`);
+  if(!g.id) return; // demo-data fallback game has no real id to look up
+  try{
+    const detail = await fetchRawgDetail(g.id);
+    const body = document.getElementById('gameModalBody');
+    if(!body) return; // modal already closed
+    body.innerHTML = `
+      <h2 style="margin:0 0 10px; font-family:var(--font-display);">${g.title}</h2>
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <span class="chip">${icon('star',12)} ${g.rating}</span><span class="chip">${detail.released}</span>
+        ${detail.genres.map(x=>`<span class="chip">${x}</span>`).join('')}
+      </div>
+      <p style="color:var(--text-1); line-height:1.6; font-size:13.5px;">${escapeHtml(detail.description)}</p>
+      ${detail.screenshots.length ? `<div style="display:flex; gap:8px; overflow-x:auto; margin-top:14px;">${detail.screenshots.map(s=>`<div style="width:150px; height:88px; flex-shrink:0; border-radius:8px; background:url('${s}') center/cover;"></div>`).join('')}</div>` : ''}
+      <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">${detail.platforms.map(p=>`<span class="chip">${p}</span>`).join('')}</div>`;
+  }catch(err){
+    console.warn('RAWG detail fetch failed:', err);
+  }
+}
+
+/* ------------------------------------------------------------
+   GITHUB PANEL — GitHub REST API (api.github.com, unauthenticated)
+   ⚠️ SECURITY NOTE: unauthenticated requests are capped at 60/hr
+   per IP by GitHub. Fine for personal/local use only — add a
+   token via the Authorization header if you need a higher limit.
+------------------------------------------------------------ */
+const GITHUB_BASE = 'https://api.github.com';
+const GH_LANG_COLORS = {TypeScript:'#3178c6', JavaScript:'#f1e05a', Python:'#3572A5', Rust:'#dea584', Go:'#00ADD8', Java:'#b07219', 'C++':'#f34b7d', C:'#555555', 'C#':'#178600', PHP:'#4F5D95', Ruby:'#701516', Swift:'#F05138', Kotlin:'#A97BFF', HTML:'#e34c26', CSS:'#563d7c', Shell:'#89e051', Vue:'#41b883', Dart:'#00B4AB'};
+const githubCache = {};
+async function fetchGithubData(username){
+  const [userRes, reposRes] = await Promise.all([
+    fetch(`${GITHUB_BASE}/users/${encodeURIComponent(username)}`),
+    fetch(`${GITHUB_BASE}/users/${encodeURIComponent(username)}/repos?per_page=100&sort=pushed`)
+  ]);
+  if(userRes.status===404) throw new Error('GitHub user not found: '+username);
+  if(!userRes.ok) throw new Error('GitHub user request failed: '+userRes.status);
+  if(!reposRes.ok) throw new Error('GitHub repos request failed: '+reposRes.status);
+  const user = await userRes.json();
+  const repos = await reposRes.json();
+
+  const stars = repos.reduce((a,r)=>a+(r.stargazers_count||0),0);
+  const forks = repos.reduce((a,r)=>a+(r.forks_count||0),0);
+
+  const repoList = [...repos]
+    .sort((a,b)=>(b.stargazers_count||0)-(a.stargazers_count||0))
+    .slice(0,5)
+    .map(r=>({ name:r.name, stars:r.stargazers_count||0, lang:r.language||'—', url:r.html_url }));
+
+  const langCounts = {};
+  repos.forEach(r=>{ if(r.language) langCounts[r.language] = (langCounts[r.language]||0)+1; });
+  const langEntries = Object.entries(langCounts).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const langTotal = langEntries.reduce((a,[,c])=>a+c,0) || 1;
+  const langs = langEntries.map(([n,c])=>({ n, c: GH_LANG_COLORS[n] || '#8b6bff', pct: Math.round(c/langTotal*100) }));
+
+  return {
+    username: user.login, avatar: user.avatar_url, name: user.name || null, bio: user.bio || null,
+    followers: user.followers||0, following: user.following||0, repos: user.public_repos||0,
+    stars, forks,
+    langs: langs.length ? langs : [{n:'—', c:'#3b4560', pct:100}],
+    repoList: repoList.length ? repoList : [{name:'No public repos yet', stars:0, lang:'—'}],
+    // GitHub's contribution calendar isn't exposed by the public REST API
+    // (it requires an authenticated GraphQL request), so this stays illustrative.
+    contrib: Array.from({length:130}).map(()=> Math.floor(seedRandom(username.length*23+5)()*5))
+  };
+}
+
+function ghSkeleton(){
+  return `<div class="glass card wide"><div class="gh-row"><div class="skeleton gh-avatar" style="width:60px; height:60px;"></div>
+      <div style="flex:1;"><div class="skeleton" style="width:140px; height:16px; margin-bottom:8px;"></div><div class="skeleton" style="width:200px; height:12px;"></div></div>
+    </div></div>
+    <div class="gh-stats">${Array.from({length:5}).map(()=>'<div class="glass gh-stat"><div class="skeleton" style="height:30px;"></div></div>').join('')}</div>`;
+}
+
+async function renderGithub(username){
+  store.set('ghUsername', username);
+  $('#ghPanelBody').innerHTML = ghSkeleton();
+  let gh, live = true;
+  if(githubCache[username]){
+    gh = githubCache[username];
+  } else {
+    try{
+      gh = await fetchGithubData(username);
+      githubCache[username] = gh;
+    }catch(err){
+      console.warn('GitHub live fetch failed, using demo data:', err);
+      live = false;
+      gh = genGithub(username);
+    }
+  }
+  if(store.get('ghUsername','octocat')!==username) return; // user changed input while loading
+  $('#ghPanelBody').innerHTML = `
+    <div class="glass card wide">
+      <div class="gh-row"><div class="gh-avatar" style="width:60px; height:60px; ${gh.avatar?`background:url('${gh.avatar}') center/cover;`:''}"></div>
+        <div><div style="font-weight:700; font-size:17px;">${escapeHtml(gh.name || gh.username)}</div><div style="color:var(--text-2); font-size:12.5px;">${gh.bio ? escapeHtml(gh.bio) : (gh.name ? '@'+escapeHtml(gh.username) : 'Developer · Building things on GitHub')}</div></div>
+      </div>
+    </div>
+    <div class="gh-stats">
+      <div class="glass gh-stat"><b>${gh.followers}</b><span>FOLLOWERS</span></div>
+      <div class="glass gh-stat"><b>${gh.following}</b><span>FOLLOWING</span></div>
+      <div class="glass gh-stat"><b>${gh.repos}</b><span>REPOS</span></div>
+      <div class="glass gh-stat"><b>${gh.stars}</b><span>STARS</span></div>
+      <div class="glass gh-stat"><b>${gh.forks}</b><span>FORKS</span></div>
+    </div>
+    <div class="glass card wide" style="margin-bottom:16px;">
+      <div class="card-head"><h3>Contribution Activity</h3></div>
+      <div class="contrib-grid">${gh.contrib.map(v=>`<div class="contrib-cell" style="background:${v===0?'rgba(255,255,255,.05)':'rgba(79,140,255,'+(v*0.22)+')'}"></div>`).join('')}</div>
+    </div>
+    <div class="grid-dash">
+      <div class="glass card">
+        <div class="card-head"><h3>Languages</h3></div>
+        <div class="lang-bar">${gh.langs.map(l=>`<div style="width:${l.pct}%; background:${l.c}"></div>`).join('')}</div>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:10px;">
+          ${gh.langs.map(l=>`<div style="display:flex; justify-content:space-between; font-size:12px;"><span><span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:${l.c}; margin-right:6px;"></span>${escapeHtml(l.n)}</span><span style="color:var(--text-2);">${l.pct}%</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="glass card wide">
+        <div class="card-head"><h3>Latest Repositories</h3></div>
+        ${gh.repoList.map(r=>`<div class="repo-row">${r.url?`<a href="${r.url}" target="_blank" rel="noopener" style="color:inherit; text-decoration:none;">${escapeHtml(r.name)}</a>`:`<span>${escapeHtml(r.name)}</span>`}<span style="color:var(--text-2);">${icon('star',12)} ${r.stars} · ${escapeHtml(r.lang)}</span></div>`).join('')}
+      </div>
+    </div>`;
+  if(!live) toast('GitHub unavailable — showing demo profile data', 'warn');
+}
+$('#ghLoadBtn').addEventListener('click', ()=>{
+  const v = $('#ghUserInput').value.trim() || 'octocat';
+  renderGithub(v);
+});
+
+/* ------------------------------------------------------------
+   TASKS
+------------------------------------------------------------ */
+function defaultTasks(){
+  return [
+    {id:1, title:'Review pull requests', category:'Dev', priority:'high', status:'inprogress', completed:false, due:'today'},
+    {id:2, title:'Study Dynamic Programming', category:'Study', priority:'medium', status:'todo', completed:false, due:'today'},
+    {id:3, title:'Reply to team thread', category:'Work', priority:'low', status:'todo', completed:false, due:'today'},
+    {id:4, title:'Prepare weekly report', category:'Work', priority:'medium', status:'done', completed:true, due:'upcoming'},
+    {id:5, title:'Plan sprint tasks', category:'Dev', priority:'high', status:'todo', completed:false, due:'upcoming'},
+  ];
+}
+let taskView = 'list';
+let taskFilter = 'today';
+function getTasks(){ return store.get('tasks', defaultTasks()); }
+function setTasks(t){ store.set('tasks', t); }
+function priorityColor(p){ return {high:'var(--danger)', medium:'var(--warn)', low:'var(--good)'}[p]||'var(--text-2)'; }
+
+function renderTasks(){
+  const all = getTasks();
+  const filtered = all.filter(t=>{
+    if(taskFilter==='completed') return t.completed;
+    if(taskFilter==='today') return t.due==='today' && !t.completed;
+    return t.due==='upcoming' && !t.completed;
+  });
+  $('#taskListWrap').classList.toggle('hidden', taskView!=='list');
+  $('#taskKanbanWrap').classList.toggle('hidden', taskView!=='kanban');
+
+  if(taskView==='list'){
+    $('#taskListWrap').innerHTML = filtered.length ? filtered.map(t=>`
+      <div class="task-row ${t.completed?'completed':''}" data-id="${t.id}">
+        <input type="checkbox" ${t.completed?'checked':''}>
+        <span class="priority-dot" style="background:${priorityColor(t.priority)}"></span>
+        <span class="title">${t.title}</span>
+        <span class="cat">${t.category}</span>
+        <button class="del-btn" title="Delete">${icon('x',14)}</button>
+      </div>`).join('') : `<div class="error-box"><span style="font-size:26px;">${icon('checkcircle',26)}</span><span>Nothing here. Enjoy the clear space.</span></div>`;
+    $$('#taskListWrap .task-row input').forEach(cb=>cb.addEventListener('change', (e)=>{
+      const id = +e.target.closest('.task-row').dataset.id;
+      const list = getTasks().map(t=> t.id===id? {...t, completed:e.target.checked, status:e.target.checked?'done':'todo'} : t);
+      setTasks(list); renderTasks(); renderDashboard();
+    }));
+    $$('#taskListWrap .del-btn').forEach(b=>b.addEventListener('click', (e)=>{
+      const id = +e.target.closest('.task-row').dataset.id;
+      setTasks(getTasks().filter(t=>t.id!==id)); renderTasks(); renderDashboard();
+      toast('Task deleted', 'info');
+    }));
+  } else {
+    const cols = [{k:'todo', label:'TO DO'}, {k:'inprogress', label:'IN PROGRESS'}, {k:'done', label:'DONE'}];
+    $('#taskKanbanWrap').innerHTML = cols.map(c=>`
+      <div class="glass kanban-col" data-col="${c.k}">
+        <h4>${c.label}</h4>
+        ${all.filter(t=>t.status===c.k).map(t=>`
+          <div class="task-card" draggable="true" data-id="${t.id}">
+            <div>${t.title}</div>
+            <div class="meta"><span class="priority-dot" style="background:${priorityColor(t.priority)}"></span><span class="cat">${t.category}</span></div>
+          </div>`).join('')}
+      </div>`).join('');
+    setupKanbanDrag();
+  }
+}
+function setupKanbanDrag(){
+  let draggedId = null;
+  $$('.task-card').forEach(card=>{
+    card.addEventListener('dragstart', ()=>{ draggedId = +card.dataset.id; card.style.opacity='.4'; });
+    card.addEventListener('dragend', ()=>{ card.style.opacity='1'; });
+  });
+  $$('.kanban-col').forEach(col=>{
+    col.addEventListener('dragover', e=> e.preventDefault());
+    col.addEventListener('drop', ()=>{
+      if(draggedId==null) return;
+      const status = col.dataset.col;
+      const list = getTasks().map(t=> t.id===draggedId ? {...t, status, completed: status==='done'} : t);
+      setTasks(list); renderTasks(); renderDashboard();
+    });
+  });
+}
+$$('#taskTabs .chip').forEach(c=>c.addEventListener('click', ()=>{
+  $$('#taskTabs .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+  taskFilter = c.dataset.filter; renderTasks();
+}));
+$$('.task-toolbar .chip[data-view]').forEach(c=>c.addEventListener('click', ()=>{
+  $$('.task-toolbar .chip[data-view]').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+  taskView = c.dataset.view; renderTasks();
+}));
+$('#newTaskInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && e.target.value.trim()){
+    const list = getTasks();
+    list.push({id:Date.now(), title:e.target.value.trim(), category:'General', priority:'medium', status:'todo', completed:false, due:'today'});
+    setTasks(list); e.target.value=''; renderTasks(); renderDashboard();
+    toast('Task added', 'good');
+  }
+});
+
+/* ------------------------------------------------------------
+   CALENDAR
+------------------------------------------------------------ */
+let calDate = new Date();
+const calEventTypes = {classes:'var(--accent)', exams:'var(--accent-2)', meetings:'var(--accent-3)', personal:'var(--good)'};
+function calMockEvents(y,m){
+  const rnd = seedRandom(y*12+m+1);
+  const days = new Date(y,m+1,0).getDate();
+  const evts = {};
+  for(let d=1; d<=days; d++){
+    if(rnd()>.65){
+      const types = Object.keys(calEventTypes);
+      evts[d] = types[Math.floor(rnd()*types.length)];
+    }
+  }
+  return evts;
+}
+function renderCalendar(){
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  $('#calMonthLabel').textContent = calDate.toLocaleDateString('en-US',{month:'long', year:'numeric'});
+  const first = new Date(y,m,1).getDay();
+  const days = new Date(y,m+1,0).getDate();
+  const prevDays = new Date(y,m,0).getDate();
+  const evts = calMockEvents(y,m);
+  const today = new Date();
+  let html = ['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++) html += `<div class="cal-day other">${prevDays-first+i+1}</div>`;
+  for(let d=1; d<=days; d++){
+    const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===d;
+    const evt = evts[d];
+    html += `<div class="cal-day ${isToday?'today':''}">${d}${evt?`<span class="evt" style="background:${calEventTypes[evt]}"></span>`:''}</div>`;
+  }
+  const total = first+days; const rem = (7-(total%7))%7;
+  for(let i=1;i<=rem;i++) html += `<div class="cal-day other">${i}</div>`;
+  $('#calGrid').innerHTML = html;
+}
+$('#calPrev').addEventListener('click', ()=>{ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); });
+$('#calNext').addEventListener('click', ()=>{ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); });
+
+/* ------------------------------------------------------------
+   GOALS
+------------------------------------------------------------ */
+function defaultGoals(){
+  return [
+    {title:'Build 3 Projects', progress:2, target:3, unit:'projects'},
+    {title:'Study 30 Hours', progress:18, target:30, unit:'hours'},
+    {title:'Complete DSA Track', progress:64, target:100, unit:'%'},
+  ];
+}
+function renderGoals(){
+  const goals = store.get('goals', defaultGoals());
+  $('#goalsList').innerHTML = goals.map(g=>`
+    <div class="glass goal-row">
+      <div class="top"><span>${g.title}</span><span style="color:var(--text-2);">${g.progress}/${g.target} ${g.unit}</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, g.progress/g.target*100)}%"></div></div>
+    </div>`).join('');
+  const achievements = [
+    {em:'flame', label:'7 Day Streak', unlocked:true},
+    {em:'trophy', label:'First Goal', unlocked:true},
+    {em:'laptop', label:'10 Projects', unlocked:false},
+    {em:'book', label:'100 Hours', unlocked:false},
+  ];
+  $('#achGrid').innerHTML = achievements.map(a=>`
+    <div class="glass ach-card ${a.unlocked?'':'locked'}"><div class="em">${icon(a.em,26)}</div><div style="font-size:12.5px; margin-top:6px;">${a.label}</div></div>`).join('');
+}
+
+/* ------------------------------------------------------------
+   ANALYTICS (custom lightweight charts)
+------------------------------------------------------------ */
+function renderChart(el, data, labels, color){
+  el.innerHTML = data.map((v,i)=>`<div class="bar-wrap"><div class="bar" style="height:${v}%; background:${color||''}"></div><div class="lbl">${labels[i]}</div></div>`).join('');
+}
+function renderAnalytics(){
+  const days = ['M','T','W','T','F','S','S'];
+  renderChart($('#chartActivity'), [40,65,50,80,60,35,20], days);
+  renderChart($('#chartTasks'), [30,55,45,70,60,40,25], days);
+  renderChart($('#chartGh'), [20,60,40,90,50,30,10], days);
+}
+
+/* ------------------------------------------------------------
+   REAL AI — NEXUS talks to Gemini through the NEXUS backend.
+   No API key ever lives in this file. The browser only ever
+   calls same-origin /api/chat and /api/health — see
+   server/server.js for the actual Gemini integration.
+------------------------------------------------------------ */
+const ERROR_LABELS = {
+  api_key_missing:'API key missing',
+  invalid_api_key:'Invalid API key',
+  model_unavailable:'Model unavailable',
+  rate_limit_exceeded:'Rate limit exceeded',
+  network_error:'Network error',
+  api_request_failed:'API request failed',
+  empty_message:'Empty message',
+  not_configured:'API key missing',
+};
+let chatHistory = []; // canonical: [{role:'user'|'assistant', content:string}]
+let sendInFlight = false;
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function trimHistory(){ if(chatHistory.length > 16) chatHistory = chatHistory.slice(-16); }
+
+/* Lightweight, dependency-light Markdown → sanitized HTML.
+   Uses marked + DOMPurify when available (loaded via CDN in <head>);
+   falls back to a minimal renderer if the CDN scripts didn't load. */
+function renderMarkdown(raw){
+  try{
+    if(window.marked && window.DOMPurify){
+      const html = window.marked.parse(raw, { breaks:true, gfm:true });
+      return window.DOMPurify.sanitize(html, { ADD_ATTR:['target'] });
+    }
+  }catch(e){ console.warn('Markdown render failed, using fallback:', e); }
+  // fallback: escape, then handle the essentials by hand
+  let s = escapeHtml(raw);
+  s = s.replace(/```([\s\S]*?)```/g, (m,code)=>`<pre><code>${code.trim()}</code></pre>`);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+function addCodeCopyButtons(container){
+  container.querySelectorAll('pre').forEach(pre=>{
+    if(pre.querySelector('.code-copy-btn')) return;
+    if(window.hljs){ try{ window.hljs.highlightElement(pre.querySelector('code')); }catch(e){} }
+    const btn = document.createElement('button');
+    btn.type='button'; btn.className='code-copy-btn'; btn.textContent='Copy';
+    btn.addEventListener('click', ()=>{
+      const code = pre.querySelector('code');
+      navigator.clipboard.writeText(code ? code.innerText : pre.innerText).then(()=>{
+        btn.textContent='Copied!'; setTimeout(()=> btn.textContent='Copy', 1400);
+      }).catch(()=>{ btn.textContent='Failed'; setTimeout(()=> btn.textContent='Copy', 1400); });
+    });
+    pre.appendChild(btn);
+  });
+}
+
+/* ------------------------------------------------------------
+   AI STATUS INDICATOR
+------------------------------------------------------------ */
+function setAiStatus(status, detail){
+  const textEl = $('#aiStatusText');
+  const dot = $('#aiStatusDot');
+  const map = {
+    checking: ['AI CORE • CONNECTING', 'var(--warn)'],
+    online:   ['AI CORE • ONLINE', 'var(--good)'],
+    error:    ['AI CORE • ERROR', 'var(--danger)'],
+    demo:     ['AI CORE • DEMO MODE', 'var(--warn)'],
+  };
+  const [label, color] = map[status] || map.checking;
+  if(textEl) textEl.textContent = detail ? `${label} — ${detail}` : label;
+  if(dot){ dot.style.background = color; dot.style.boxShadow = `0 0 8px ${color}`; }
+}
+async function checkAiHealth(){
+  if(settings.aiMode==='demo'){ setAiStatus('demo'); return; }
+  setAiStatus('checking');
+  try{
+    const res = await fetch('/api/health?live=1');
+    const data = await res.json();
+    if(data.status==='ready') setAiStatus('online');
+    else setAiStatus('error', ERROR_LABELS[data.error] || ERROR_LABELS[data.status] || 'connection error');
+  }catch(e){
+    setAiStatus('error', 'backend unreachable');
+  }
+}
+
+/* ------------------------------------------------------------
+   STREAMING CHAT CLIENT — reads the /api/chat SSE-style stream
+------------------------------------------------------------ */
+async function streamChat(message, history, { onChunk, onDone, onError, onMeta }){
+  let res;
+  try{
+    res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        message, history,
+        githubUsername: store.get('ghUsername','octocat'),
+        city: store.get('weatherCity','Bhopal')
+      })
+    });
+  }catch(networkErr){
+    console.error('NEXUS AI network error:', networkErr);
+    onError('network_error', ERROR_LABELS.network_error);
+    return;
+  }
+  if(!res.ok){
+    let code='api_request_failed', message=ERROR_LABELS.api_request_failed;
+    try{ const data = await res.json(); code = data.error||code; message = data.message||ERROR_LABELS[code]||message; }catch(e){}
+    console.error('NEXUS AI error response:', res.status, code, message);
+    onError(code, message);
+    return;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while(true){
+    let chunkResult;
+    try{ chunkResult = await reader.read(); }
+    catch(streamErr){ console.error('NEXUS AI stream read error:', streamErr); onError('network_error', ERROR_LABELS.network_error); return; }
+    const { value, done } = chunkResult;
+    if(done) break;
+    buf += decoder.decode(value, { stream:true });
+    let idx;
+    while((idx = buf.indexOf('\n\n')) >= 0){
+      const raw = buf.slice(0, idx); buf = buf.slice(idx+2);
+      if(!raw.startsWith('data:')) continue;
+      const jsonStr = raw.slice(5).trim();
+      if(!jsonStr) continue;
+      let obj; try{ obj = JSON.parse(jsonStr); }catch(e){ continue; }
+      if(obj.chunk) onChunk(obj.chunk);
+      if(obj.module || obj.sources) onMeta(obj);
+      if(obj.error){ console.error('NEXUS AI Gemini error:', obj.error, obj.message); onError(obj.error, obj.message||ERROR_LABELS[obj.error]); return; }
+      if(obj.done){ onDone(); return; }
+    }
+  }
+  onDone();
+}
+
+/* ------------------------------------------------------------
+   AI ASSISTANT — UI wiring
+------------------------------------------------------------ */
+const aiSuggestions = ['What is quantum computing?','What is the weather?','Show trending movies',"Summarize today's tech news",'Show my GitHub','Write a Python binary search'];
+$('#aiSuggest').innerHTML = aiSuggestions.map(s=>`<span class="chip">${escapeHtml(s)}</span>`).join('');
+$$('#aiSuggest .chip').forEach(c=>c.addEventListener('click', ()=> sendAiMessage(c.textContent)));
+
+function pushMessage(role, html){
+  const box = $('#aiMessages');
+  const el = document.createElement('div');
+  el.className = 'msg '+role;
+  const inner = document.createElement('div');
+  inner.className = 'msg-body';
+  inner.innerHTML = html;
+  const ts = document.createElement('span');
+  ts.className='ts';
+  ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  el.appendChild(inner); el.appendChild(ts);
+  box.appendChild(el);
+  addCodeCopyButtons(el);
+  box.scrollTop = box.scrollHeight;
+  return el;
+}
+pushMessage('ai', "Hi, I'm NEXUS, running on Gemini. Ask me anything — general questions, code, explanations — or try weather, movies, news, and GitHub lookups.");
+
+function updateSendState(){
+  const btn = $('#aiSendBtn');
+  if(btn){ btn.disabled = sendInFlight; btn.style.opacity = sendInFlight ? .5 : ''; btn.style.cursor = sendInFlight ? 'not-allowed' : ''; }
+}
+
+/* Demo Mode — explicit only, never a silent fallback. Settings → AI → Demo. */
+function aiRespond(input){
+  const q = input.toLowerCase();
+  if(q.includes('weather')){
+    const w = weatherCache ? weatherCache.data : weatherService.demo();
+    return `Right now it's <b>${w.temp}°C and ${w.condition}</b> in ${w.city}, feels like ${w.feels}°. Humidity is ${w.humidity}% with wind at ${w.wind} km/h.`;
+  }
+  if(q.includes('movie')){
+    const m = genMovies(Math.floor(Math.random()*5),1)[0];
+    return `For tonight, I'd suggest <b>${m.title}</b> (${m.genre}, ${m.year}) — rated ${m.rating}/10. Want me to open the Movies module?`;
+  }
+  if(q.includes('news') || q.includes('summarize')){
+    const n = (newsCache['Technology'] || genNews('Technology',3)).slice(0,3);
+    return `Top signals right now: ${n.map(a=>a.title).join('; ')}.`;
+  }
+  if(q.includes('github')){
+    const gh = genGithub(store.get('ghUsername','octocat'));
+    return `${gh.username} has <b>${gh.repos} repositories</b>, ${gh.stars} stars, and ${gh.followers} followers. Opening GitHub module.`;
+  }
+  if(q.includes('task')){
+    const t = getTasks().filter(x=>!x.completed).length;
+    return `You have <b>${t} open tasks</b>. Want me to open the Tasks module?`;
+  }
+  return `Got it — I've noted "${escapeHtml(input)}". Demo Mode uses canned local responses only. Try weather, news, movies, GitHub, or tasks — or switch back to Real AI in Settings.`;
+}
+function showAiError(code, message, originalText){
+  const el = document.createElement('div');
+  el.className = 'msg ai error-msg';
+  const inner = document.createElement('div');
+  inner.className = 'msg-body';
+  inner.innerHTML = `
+    <div><b>NEXUS AI could not connect to Gemini.</b></div>
+    <div style="margin-top:4px; color:var(--text-2); font-size:12px;">${escapeHtml(message || 'Unknown error')}</div>
+    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+      <button type="button" class="btn-primary ai-retry-btn" style="padding:7px 14px; font-size:12px;">RETRY</button>
+      <button type="button" class="icon-btn ai-demo-btn" style="width:auto; padding:7px 14px; font-size:12px;">USE DEMO MODE</button>
+    </div>`;
+  el.appendChild(inner);
+  const box = $('#aiMessages');
+  box.appendChild(el); box.scrollTop = box.scrollHeight;
+  inner.querySelector('.ai-retry-btn').addEventListener('click', ()=>{ el.remove(); sendAiMessage(originalText); });
+  inner.querySelector('.ai-demo-btn').addEventListener('click', ()=>{
+    settings.aiMode = 'demo'; saveSettings(); el.remove();
+    setAiStatus('demo');
+    toast('Switched to Demo Mode', 'warn');
+    const reply = aiRespond(originalText);
+    pushMessage('ai', reply + ' <span class="demo-badge">DEMO MODE</span>');
+    chatHistory.push({ role:'assistant', content: reply.replace(/<[^>]+>/g,'') });
+  });
+}
+async function sendAiMessage(text){
+  text = (text||'').trim();
+  if(!text || sendInFlight) return;
+  pushMessage('user', escapeHtml(text));
+  $('#aiInput').value=''; autoResizeAiInput();
+  chatHistory.push({ role:'user', content: text });
+
+  if(settings.aiMode === 'demo'){
+    const reply = aiRespond(text);
+    pushMessage('ai', reply + ' <span class="demo-badge">DEMO MODE</span>');
+    chatHistory.push({ role:'assistant', content: reply.replace(/<[^>]+>/g,'') });
+    trimHistory();
+    return;
+  }
+
+  sendInFlight = true; updateSendState();
+  const box = $('#aiMessages');
+  const msgEl = document.createElement('div');
+  msgEl.className = 'msg ai';
+  const inner = document.createElement('div');
+  inner.className = 'msg-body';
+  inner.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  msgEl.appendChild(inner);
+  box.appendChild(msgEl); box.scrollTop = box.scrollHeight;
+
+  let raw = '', gotChunk = false, metaModule = null;
+  const historyForRequest = chatHistory.slice(0, -1);
+
+  await streamChat(text, historyForRequest, {
+    onChunk: (chunk)=>{
+      if(!gotChunk){ inner.innerHTML=''; gotChunk = true; }
+      raw += chunk;
+      inner.innerHTML = renderMarkdown(raw);
+      addCodeCopyButtons(inner);
+      box.scrollTop = box.scrollHeight;
+    },
+    onMeta: (meta)=>{ if(meta.module) metaModule = meta.module; },
+    onDone: ()=>{
+      sendInFlight = false; updateSendState();
+      const ts = document.createElement('span'); ts.className='ts';
+      ts.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      msgEl.appendChild(ts);
+      if(gotChunk){
+        chatHistory.push({ role:'assistant', content: raw });
+        trimHistory();
+        setAiStatus('online');
+        if(metaModule) setTimeout(()=> switchPanel(metaModule), 450);
+      } else {
+        msgEl.remove();
+      }
+    },
+    onError: (code, message)=>{
+      sendInFlight = false; updateSendState();
+      msgEl.remove();
+      showAiError(code, message, text);
+      setAiStatus('error', message);
+    }
+  });
+}
+function autoResizeAiInput(){
+  const el = $('#aiInput');
+  if(!el) return;
+  el.style.height='auto';
+  el.style.height = Math.min(el.scrollHeight, 120)+'px';
+}
+$('#aiSendBtn').addEventListener('click', ()=> sendAiMessage($('#aiInput').value));
+$('#aiInput').addEventListener('input', autoResizeAiInput);
+$('#aiInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    if(!sendInFlight) sendAiMessage(e.target.value);
+  }
+});
+checkAiHealth();
+$('#aiVoiceBtn').addEventListener('click', ()=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('Voice recognition not supported in this browser', 'warn'); return; }
+  const rec = new SR(); rec.lang='en-US'; rec.interimResults=false;
+  $('#aiVoiceBtn').style.color='var(--accent-3)';
+  toast('Listening…', 'info');
+  rec.onresult = (e)=>{ sendAiMessage(e.results[0][0].transcript); };
+  rec.onerror = ()=> toast('Voice input error', 'bad');
+  rec.onend = ()=>{ $('#aiVoiceBtn').style.color=''; };
+  rec.start();
+});
+$('#aiAttachBtn').addEventListener('click', ()=> toast('Attachments are simulated in demo mode', 'info'));
+
+/* ------------------------------------------------------------
+   FOCUS MODE
+------------------------------------------------------------ */
+const focusPresets = [{k:'25/5', work:25, rest:5}, {k:'50/10', work:50, rest:10}, {k:'90/20', work:90, rest:20}, {k:'Custom', work:15, rest:3}];
+let focusTimer = null, focusSeconds = 25*60, focusTotal = 25*60, focusPaused=false;
+$('#focusPresets').innerHTML = focusPresets.map((p,i)=>`<div class="chip ${i===0?'active':''}" data-i="${i}">${p.k}</div>`).join('');
+$$('#focusPresets .chip').forEach(c=>c.addEventListener('click', ()=>{
+  $$('#focusPresets .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+  const p = focusPresets[+c.dataset.i];
+  focusSeconds = p.work*60; focusTotal = p.work*60;
+  $('#focusModeLabel').textContent = 'FOCUS SESSION • '+p.k;
+  updateFocusDisplay();
+}));
+function updateFocusDisplay(){
+  const m = Math.floor(focusSeconds/60), s = focusSeconds%60;
+  $('#focusTime').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const ring = $('#focusRing'); const circumference = 2*Math.PI*88;
+  ring.setAttribute('stroke-dasharray', circumference);
+  ring.setAttribute('stroke-dashoffset', circumference*(1-focusSeconds/focusTotal));
+}
+function openFocus(){
+  const openTasks = getTasks().filter(t=>!t.completed);
+  $('#focusTaskLabel').textContent = openTasks.length ? 'Working on: '+openTasks[0].title : 'No task selected';
+  $('#focusOverlay').classList.remove('hidden');
+  updateFocusDisplay();
+  runFocusTimer();
+}
+function runFocusTimer(){
+  clearInterval(focusTimer); focusPaused=false; $('#focusPauseBtn').textContent='PAUSE';
+  focusTimer = setInterval(()=>{
+    if(focusPaused) return;
+    focusSeconds--;
+    if(focusSeconds<=0){ clearInterval(focusTimer); toast('Focus session complete','good'); closeFocus(); return; }
+    updateFocusDisplay();
+  },1000);
+}
+$('#focusPauseBtn').addEventListener('click', ()=>{
+  focusPaused = !focusPaused; $('#focusPauseBtn').textContent = focusPaused? 'RESUME':'PAUSE';
+});
+function closeFocus(){ clearInterval(focusTimer); $('#focusOverlay').classList.add('hidden'); }
+$('#focusExitBtn').addEventListener('click', closeFocus);
+
+/* ------------------------------------------------------------
+   COMMAND PALETTE
+------------------------------------------------------------ */
+const paletteIndex = [
+  ...NAV_ITEMS.map(n=>({label:'Open '+n.label, cat:'Navigate', action:()=>switchPanel(n.id)})),
+  {label:'Start Focus Session', cat:'Action', action:openFocus},
+  {label:'Add a Task', cat:'Action', action:()=>{ switchPanel('tasks'); setTimeout(()=>$('#newTaskInput').focus(),150); }},
+  {label:'Open Settings', cat:'Navigate', action:()=>switchPanel('settings')},
+  {label:'Ask NEXUS: What is the weather?', cat:'AI', action:()=>{ switchPanel('ai'); sendAiMessage('What is the weather?'); }},
+  {label:'Ask NEXUS: Plan my evening', cat:'AI', action:()=>{ switchPanel('ai'); sendAiMessage('Plan my evening'); }},
+];
+function openPalette(){
+  $('#paletteOverlay').classList.remove('hidden');
+  $('#paletteInput').value=''; $('#paletteInput').focus();
+  renderPaletteResults('');
+}
+function closePalette(){ $('#paletteOverlay').classList.add('hidden'); }
+function renderPaletteResults(q){
+  const list = paletteIndex.filter(i=> i.label.toLowerCase().includes(q.toLowerCase()));
+  $('#paletteResults').innerHTML = list.map((i,idx)=>`<div class="palette-item ${idx===0?'sel':''}" data-i="${idx}"><span>${i.label}</span><span class="cat">${i.cat}</span></div>`).join('') || `<div style="padding:20px; text-align:center; color:var(--text-2); font-size:13px;">No results.</div>`;
+  $$('.palette-item').forEach(el=> el.addEventListener('click', ()=>{ list[+el.dataset.i].action(); closePalette(); }));
+  paletteResultsCache = list;
+}
+let paletteResultsCache = [];
+$('#openPaletteBtn').addEventListener('click', openPalette);
+$('#paletteInput').addEventListener('input', (e)=> renderPaletteResults(e.target.value));
+$('#paletteInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && paletteResultsCache[0]){ paletteResultsCache[0].action(); closePalette(); }
+  if(e.key==='Escape') closePalette();
+});
+$('#paletteOverlay').addEventListener('click', (e)=>{ if(e.target.id==='paletteOverlay') closePalette(); });
+document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); openPalette(); }
+  if(e.key==='Escape'){ closePalette(); }
+});
+
+/* ------------------------------------------------------------
+   MODAL
+------------------------------------------------------------ */
+function showModal(innerHtml){
+  const overlay = document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.innerHTML = `<div class="glass modal-box" style="position:relative;"><button class="icon-btn modal-close">${icon('x',16)}</button>${innerHtml}</div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('.modal-close').addEventListener('click', ()=> overlay.remove());
+}
+
+/* ------------------------------------------------------------
+   SETTINGS
+------------------------------------------------------------ */
+const settingsSections = [
+  {id:'appearance', label:'Appearance'},
+  {id:'background', label:'Background'},
+  {id:'ai', label:'AI'},
+  {id:'sound', label:'Sound'},
+  {id:'shortcuts', label:'Keyboard Shortcuts'},
+];
+let activeSettingsSection = 'appearance';
+function saveSettings(){ store.set('settings', settings); }
+function renderSettingsNav(){
+  $('#settingsNav').innerHTML = settingsSections.map(s=>`<div class="${s.id===activeSettingsSection?'active':''}" data-id="${s.id}">${s.label}</div>`).join('');
+  $$('#settingsNav div').forEach(d=> d.addEventListener('click', ()=>{ activeSettingsSection=d.dataset.id; renderSettingsNav(); renderSettingsBody(); }));
+}
+function switchRow(label, desc, on, onToggle){
+  return `<div class="setting-row"><div><div class="lbl">${label}</div>${desc?`<div class="desc">${desc}</div>`:''}</div><div class="switch ${on?'on':''}" data-key="${label}"></div></div>`;
+}
+function renderSettingsBody(){
+  const body = $('#settingsBody');
+  if(activeSettingsSection==='appearance'){
+    body.innerHTML = `
+      <div class="glass settings-section">
+        <h3>Theme</h3>
+        <div class="theme-opts">${['dark','light','system'].map(t=>`<div class="chip ${settings.theme===t?'active':''}" data-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</div>`).join('')}</div>
+      </div>
+      <div class="glass settings-section">
+        <h3>Accent Color</h3>
+        <div class="accent-swatches">
+          ${[['blue','#4f8cff'],['cyan','#22d3ee'],['purple','#a374ff'],['green','#3ddc97']].map(([k,c])=>`<div class="swatch ${settings.accent===k?'sel':''}" style="background:${c}" data-accent="${k}"></div>`).join('')}
+        </div>
+      </div>`;
+    $$('.theme-opts .chip').forEach(c=>c.addEventListener('click', ()=>{ settings.theme=c.dataset.theme; applyTheme(); saveSettings(); renderSettingsBody(); }));
+    $$('.swatch').forEach(s=>s.addEventListener('click', ()=>{ settings.accent=s.dataset.accent; applyTheme(); saveSettings(); renderSettingsBody(); toast('Accent updated','good'); }));
+  }
+  if(activeSettingsSection==='background'){
+    body.innerHTML = `
+      <div class="glass settings-section">
+        <h3>Background Layers</h3>
+        ${switchRow('Animated Grid','Diagonal engineering blueprint grid', settings.bgGrid)}
+        ${switchRow('Particles','Drifting particle field', settings.bgParticles)}
+        ${switchRow('Neural Network','NEXUS AI network visualization', settings.bgNeural)}
+        ${switchRow('Scanline','Slow top-to-bottom sweep', settings.bgScanline)}
+        ${switchRow('Cursor Glow','Soft glow following the pointer', settings.bgCursorGlow)}
+        ${switchRow('Parallax','Background reacts to mouse movement', settings.bgParallax)}
+      </div>
+      <div class="glass settings-section">
+        <h3>Animation Intensity</h3>
+        <div class="intensity-opts">${['low','medium','high'].map(l=>`<div class="chip ${settings.intensity===l?'active':''}" data-int="${l}">${l[0].toUpperCase()+l.slice(1)}</div>`).join('')}</div>
+      </div>`;
+    const map = {'Animated Grid':'bgGrid','Particles':'bgParticles','Neural Network':'bgNeural','Scanline':'bgScanline','Cursor Glow':'bgCursorGlow','Parallax':'bgParallax'};
+    $$('.switch').forEach(s=> s.addEventListener('click', ()=>{
+      const key = map[s.dataset.key]; settings[key] = !settings[key]; s.classList.toggle('on');
+      saveSettings(); applyBgSettings();
+    }));
+    $$('.intensity-opts .chip').forEach(c=>c.addEventListener('click', ()=>{ settings.intensity=c.dataset.int; saveSettings(); initParticles(); renderSettingsBody(); }));
+  }
+  if(activeSettingsSection==='sound'){
+    body.innerHTML = `
+      <div class="glass settings-section">
+        <h3>Sound</h3>
+        ${switchRow('Sound Effects','Boot, buttons, notifications, AI', settings.soundFx)}
+        ${switchRow('Ambient Sound','Optional background ambience', settings.soundAmbient)}
+      </div>`;
+    const map2 = {'Sound Effects':'soundFx','Ambient Sound':'soundAmbient'};
+    $$('.switch').forEach(s=> s.addEventListener('click', ()=>{
+      const key = map2[s.dataset.key]; settings[key] = !settings[key]; s.classList.toggle('on'); saveSettings();
+    }));
+  }
+  if(activeSettingsSection==='shortcuts'){
+    const shortcuts = [['Ctrl / Cmd + K','Open universal search'],['Esc','Close overlays'],['Enter','Send message / confirm'],['Shift + Enter','New line in AI chat']];
+    body.innerHTML = `<div class="glass settings-section"><h3>Keyboard Shortcuts</h3>
+      ${shortcuts.map(s=>`<div class="setting-row"><span class="lbl">${s[1]}</span><span class="kbd" style="font-family:var(--font-mono); border:1px solid var(--border); padding:3px 8px; border-radius:6px; font-size:11px;">${s[0]}</span></div>`).join('')}
+    </div>`;
+  }
+  if(activeSettingsSection==='ai'){
+    body.innerHTML = `
+      <div class="glass settings-section">
+        <h3>AI Mode</h3>
+        <div class="theme-opts">
+          <div class="chip ${settings.aiMode!=='demo'?'active':''}" data-aimode="real">Real AI</div>
+          <div class="chip ${settings.aiMode==='demo'?'active':''}" data-aimode="demo">Demo</div>
+        </div>
+        <p class="desc" style="margin-top:10px;">Real AI sends your messages to Gemini through the NEXUS backend. Demo Mode answers with local canned responses only — no network calls, and NEXUS never switches to it silently.</p>
+      </div>
+      <div class="glass settings-section">
+        <h3>AI Diagnostics</h3>
+        <div id="aiDiagBody" style="font-family:var(--font-mono); font-size:12.5px; display:flex; flex-direction:column; gap:7px;">Checking…</div>
+        <button type="button" class="btn-primary" id="runDiagBtn" style="margin-top:14px; padding:9px 16px; font-size:12.5px;">Run Diagnostics</button>
+      </div>`;
+    $$('.theme-opts .chip[data-aimode]').forEach(c=>c.addEventListener('click', ()=>{
+      settings.aiMode = c.dataset.aimode; saveSettings(); renderSettingsBody();
+      if(settings.aiMode==='demo'){ setAiStatus('demo'); toast('Demo Mode enabled', 'warn'); }
+      else { toast('Real AI enabled', 'good'); checkAiHealth(); }
+    }));
+    runAiDiagnostics();
+    $('#runDiagBtn').addEventListener('click', runAiDiagnostics);
+  }
+}
+async function runAiDiagnostics(){
+  const el = $('#aiDiagBody');
+  if(!el) return;
+  el.textContent = 'Checking…';
+  try{
+    const res = await fetch('/api/health?live=1');
+    const data = await res.json();
+    const connLabel = data.status==='ready' ? 'CONNECTED' : (ERROR_LABELS[data.error] || (data.status||'unknown').toUpperCase());
+    const rows = [
+      ['Gemini Configuration', data.geminiConfigured ? 'READY' : 'NOT CONFIGURED'],
+      ['Backend', 'ONLINE'],
+      ['Model', data.model || '—'],
+      ['API Connection', connLabel],
+    ];
+    el.innerHTML = rows.map(([k,v])=>`<div style="display:flex; justify-content:space-between; gap:12px;"><span style="color:var(--text-2);">${k}</span><span>${escapeHtml(String(v))}</span></div>`).join('');
+    if(settings.aiMode !== 'demo'){
+      setAiStatus(data.status==='ready' ? 'online' : 'error', data.status!=='ready' ? connLabel : null);
+    }
+  }catch(e){
+    el.innerHTML = '<div style="color:var(--danger);">Backend unreachable — is the NEXUS server running?</div>';
+    if(settings.aiMode !== 'demo') setAiStatus('error', 'backend unreachable');
+  }
+}
+function applyBgSettings(){
+  $('#bgScanline').style.display = settings.bgScanline && !reduceMotion ? '' : 'none';
+  $('#cursorGlow').style.display = settings.bgCursorGlow && !reduceMotion ? '' : 'none';
+  $('#bgGrid').style.display = settings.bgGrid ? '' : 'none';
+}
+
+/* ------------------------------------------------------------
+   PANEL ROUTER — lazy render on first visit
+------------------------------------------------------------ */
+const rendered = {};
+const origSwitch = switchPanel;
+switchPanel = function(id){
+  origSwitch(id);
+  if(rendered[id]) return; rendered[id]=true;
+  if(id==='weather') renderWeatherPanel();
+  if(id==='movies'){ renderMovieTabs(); renderMovieGrid(); }
+  if(id==='music') renderMusic();
+  if(id==='news'){ renderNewsTabs(); renderNewsGrid(); }
+  if(id==='games'){ renderGameTabs(); renderGameGrid(); }
+  if(id==='github') renderGithub(store.get('ghUsername','octocat'));
+  if(id==='tasks') renderTasks();
+  if(id==='calendar') renderCalendar();
+  if(id==='goals') renderGoals();
+  if(id==='analytics') renderAnalytics();
+  if(id==='settings'){ renderSettingsNav(); renderSettingsBody(); }
+};
+
+})();
+</script>
+</body>
+</html>
